@@ -22,4 +22,12 @@
    ```shell
    $ twine upload --repository testpypi dist/*
    ```
-   The software will prompt you to enter your TestPyPi username and password.
+   `twine` will prompt you to enter your TestPyPi username and password.  
+   If the upload succeeds, take a look at the web page which URL has just been printed
+   (something like https://test.pypi.org/project/hoca/version_number/ or https://test.pypi.org/project/hoca/).
+
+6. Publish on PyPi:
+   ```shell
+   $ twine upload dist/*
+   ```
+   Again, `twine` will prompt you to enter your PyPi username and password.

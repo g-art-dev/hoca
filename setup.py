@@ -27,7 +27,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="hoca",
-    version="2021.6.1",
+    version="2021.6.2",
     description="Provides a set of tools to implement Higher-Order Cellular Automata populations",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -55,12 +55,11 @@ setup(
     ],
     # TODO: add keywords
     keywords=["cellular automata", "agents"],
-    packages=["hoca"],
+    packages=["hoca",
+              "hoca.core",
+              "hoca.monitor",
+              "hoca.demo"],
     include_package_data=True,
     python_requires='>=3',
-    install_requires=[
-        "numpy >= 1.20.1",
-        "Pillow >= 7.0.0",
-        "Kivy >= 2.0.0",
-        "av >= 8.0.3"],
+    install_requires=["numpy >= 1.20.1", "Pillow >= 7.0.0", "av >= 8.0.3"],
 )
