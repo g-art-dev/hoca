@@ -27,11 +27,11 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="hoca",
-    version="2021.6.2",
+    version="2021.6.3",
     description="Provides a set of tools to implement Higher-Order Cellular Automata populations",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/jlp6k/hoca/",
+    url="https://github.com/g-art-dev/hoca",
     author="Jean-Louis Paquelin and Enrico Formenti",
     author_email="g-art-dev@villa-arson.org",  # TODO: replace by hoca@g-art.net when ready
     license="GNU Lesser General Public License v3 or later",

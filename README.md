@@ -2,12 +2,6 @@
 
 ## Overview
 
-## Advertising hoca
-
-It would be greatly appreciated by the authors if the images and other productions made with the `hoca` library
-were accompanied by a citation naming it; something like:  
-"This <work> was produced with the `hoca` library (https://pypi.org/project/hoca/)".
-
 ## Installation
 The latest version of `hoca` is installed via a standard pip command:
 
@@ -15,12 +9,20 @@ The latest version of `hoca` is installed via a standard pip command:
 pip install hoca
 ```
 
-#### Population classes
+## Advertising hoca
 
-##### `hoca.core.automata_framework.Population`
+It would be greatly appreciated by the authors if the images and other productions made with the `hoca` library
+were accompanied by a citation naming it; something like:  
+"This <work> was produced with the `hoca` library (https://pypi.org/project/hoca/)".
+
+## Data Structures
+
+### Population classes
+
+#### `hoca.core.automata_framework.Population`
 The Population class is abstract. It's the root of the population classes hierarchy.
 
-##### `hoca.core.BasicPopulation`
+#### `hoca.core.BasicPopulation`
 BasicPopulation class inherits of the Population class and implements the base functionalities
 of a population:
 
@@ -30,14 +32,14 @@ of a population:
   of generations,
 - it allows to shuffle the automata's order of execution.
 
-##### `hoca.monitor.CallbackPopulation`
+#### `hoca.monitor.CallbackPopulation`
 CallbackPopulation class inherits of the BasicPopulation class. It provides a way to
 monitor the automata population throughout the successive generations.
 
 CallbackPopulation module contains both the CallbackPopulation population class and 
 the Callback class hierachy.
 
-#### Fields
+### Fields
 
 Fields are data structures which hold the source data process by an automata population
 and the result data produced by them. Fields can also be both source and result at the same time. This way

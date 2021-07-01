@@ -30,4 +30,6 @@
    ```shell
    $ twine upload dist/*
    ```
-   Again, `twine` will prompt you to enter your PyPi username and password.
+   Again, `twine` will prompt you to enter your PyPi username and password.  
+   If the upload succeeds, take a look at the web page which URL has just been printed
+   (something like https://pypi.org/project/hoca/version_number/ or https://pypi.org/project/hoca/).
