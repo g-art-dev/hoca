@@ -21,7 +21,8 @@ import numpy
 
 
 class ImageField(Field):
-    """
+    """The ImageField class is an implementation of the abstract Field class.
+
     WARNING: even if ImageField instances have __getitem__() and __setitem__()
     that return numpy arrays, you can't write:
         my_image_field = my_image_field / 2

@@ -20,18 +20,41 @@ from enum import Enum
 
 
 class Field(ABC):
+    """Field is an abstract class that defines the common basic features of the data structure
+    on which the automata populations operate.
+
+    The actual implementations of the Field class are constrained by this class. They must offer
+    at least:
+    - functions to read and write the data in the field,
+    - a boolean function to say if some coordinates are in the field or not, this is useful if the
+    field is finite.
+    """
+
     class IOMode(Enum):
+        """IOMode class is used to specify if the field is readable (IN), writable (OUT) or
+        both (INOUT).
+        Note this is not enforced however.
+        """
+
         IN = 0
         OUT = 1
         INOUT = 2
 
     def __init__(self, io_mode=IOMode.IN):
+        """The Field class initializer takes one keyword parameter. It is used to specify
+        the accessibility of the data in the field structure.
+
+        :type io_mode: IOMode enum
+        """
         self.io_mode = io_mode
 
     @abstractmethod
     def __getitem__(self, idx):
-        """
-        TODO: a better documentation
+        """The __getitem__() special abstract method defines the interface to read the data
+        in a field.
+
+        See: https://docs.python.org/3/reference/datamodel.html#object.__getitem__
+
         :param idx: slice
         :return: a value
         """
@@ -39,8 +62,11 @@ class Field(ABC):
 
     @abstractmethod
     def __setitem__(self, idx, value):
-        """
-        TODO: a better documentation
+        """The __setitem__() special abstract method defines the interface to write the data
+        in a field.
+
+        See: https://docs.python.org/3/reference/datamodel.html#object.__setitem__
+
         :param idx: slice
         :param value:
         :return: None
@@ -49,8 +75,10 @@ class Field(ABC):
 
     @abstractmethod
     def is_in(self, coordinates):
-        """
-        Returns True if the coordinates points in the field
+        """Returns
+        - True if the coordinates points in the field,
+        - and False they're outside the field.
+
         :param coordinates: list or tuple of ints
         :return: bool
         """
@@ -60,55 +88,118 @@ class Field(ABC):
 
 
 class Automaton(ABC):
+    """Automaton abstract class defines the common features of the automata; mainly the job
+    done by an automaton during one generation.
+    """
+
     @classmethod
     @abstractmethod
     def build_field_dict(cls, *args, **kwargs):
+        """The build_field_dict() abstract class method is a convenience method used to
+        build the appropriate field dictionary to be used by a population of automata as they
+        probably have to share the same field or fields.
+
+        A Python dictionary is used here in order to allow the manipulation of multiple fields
+        by the automata population and to facilitate human interpretation of the data structure.
+        """
         return {}
 
     # TODO: add a class method providing the optimal number of automata for the current Field and set of parameters
     # TODO: add a class method providing the optimal number of generation for the current Field, set of parameters and number of automata
 
     def __init__(self):
+        """The initializer method sets the automaton status to AutomatonStatus.ALIVE.
+        The status should be updated at the end of each generation.
+        """
         # Even if the class is abstract,
-        # it provides basic initialization
+        # it provides the basic initialization
         self.status = AutomatonStatus.ALIVE
 
     @abstractmethod
     def run(self):
+        """The run() abstract method has to be implemented in Automaton subclasses in order the
+        define what an automaton has to do on each generation. This method will be also in charge
+        of updating the automaton status property on each generation."""
         pass
 
     @classmethod
     def describe(cls, short=True):
+        """The describe() method is a convenience method used to get some textual information
+        about an automaton (e.g. its status).
+        This method takes an optional boolean keyword parameter named short to specify if the
+        reply has to be short or not.
+
+        :type short: bool
+        :return: str
+        """
         return cls.__name__
 
 
 class AutomatonStatus:
+    """The AutomatonStatus class is used to hold the status data of an automaton.
+
+    The class defines 3 states:
+    - DEAD: the automaton is dead it will not be run on the next generation.
+    - ALIVE: the automaton is dead it will not be run on the next generation.
+    - RESPAWN: the automaton is dead but should or may be resurrected and ran on the
+      next generation. Note that the exact semantics of the RESPAWN status is left to
+      the appreciation of the implementer of the automata's class.
+    """
+
     DEAD = 0
     ALIVE = 1
     RESPAWN = 2
 
     def __init__(self, s, x, y):
+        """The initializer method sets the status and the coordinates kept in the AutomatonStatus
+        instance properties.
+        """
         assert s in (AutomatonStatus.DEAD, AutomatonStatus.ALIVE, AutomatonStatus.RESPAWN)
 
         self.s = s
         self.x = x
         self.y = y
+        # TODO: this is limited to 2D coordinates, this should be generalized to nD.
 
 
 class Population(ABC):
+    """The Population abstract class defines the basic features of a population of automata,
+    i.e. running each automaton code.
+    """
+
     def __init__(self):
-        super().__init__()
+        """The initializer method sets the generation number property to 0 (as no
+        automaton has been ran yet).
+        """
 
         self.generation = 0
 
     @abstractmethod
     def run(self):
+        """The run() abstract method has to be implemented in order to run (at least) all the
+        automata for one generation.
+        The method increases the generation number by 1.
+        """
         self.generation += 1
 
     @abstractmethod
     def play(self):
+        """The play() abstract method has to be implemented in order to run all the
+        automata for a number of generation, it should probably be done by calling the run()
+        method multiple times.
+
+        The actual number of generation ran by the play() method is up to the implementer.
+        """
         pass
 
     @abstractmethod
     def describe(self, short=True):
+        """The describe() method is a convenience method used to get some textual information
+        about a population (e.g. the number of automata which are ALIVE or the generation).
+        This method takes an optional boolean keyword parameter named short to specify if the
+        reply has to be short or not.
+
+        :type short: bool
+        :return: str
+        """
         return self.__class__.__name__
