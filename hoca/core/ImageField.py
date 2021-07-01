@@ -15,13 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with hoca.  If not, see <http://www.gnu.org/licenses/>.
 
-from .automata_framework import Field
+from hoca.core.automata_framework import Field
 from PIL import Image
 import numpy
 
 
 class ImageField(Field):
-    """The ImageField class is an implementation of the abstract Field class.
+    """The ImageField class is an implementation of the abstract Field class. It allows
+    the creation of fields based on the content of an image or the interpretation of a field
+    as an image.
+
+    ImageField have 2D discreet coordinates (they are pixel coordinates after all) which give
+    access to a 3rd dimension (the depth of the field) of a triplet of RGB values or a quadruplet
+    of RGBA values. These color component values are in the [0.0, 1.0] interval.
 
     WARNING: even if ImageField instances have __getitem__() and __setitem__()
     that return numpy arrays, you can't write:
@@ -30,15 +36,19 @@ class ImageField(Field):
         my_image_field[:, :, :] = my_image_field[:, :, :] / 2
     or
        my_image_field.data = my_image_field.data / 2
-    That's because ImageField inherits of Field and numpy is a client class.
+    That's because ImageField inherits of Field and numpy is just a client class.
     """
 
     @classmethod
     def from_image(cls, image_path, image_mode=None, **kwargs):
-        """
+        """The from_image() class method returns an instance of ImageField which content
+        corresponds to an image content.
 
-        :param image_path: str
+        :param image_path: A filename (string), pathlib.Path object or a file object.
+        The file object must implement ``file.read``, ``file.seek``, and ``file.tell`` methods,
+        and be opened in binary mode.
         :param image_mode: str PIL.Image mode
+        See: https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
         :param kwargs: these are passed to the class constructor
         :return: ImageField instance
         """
@@ -51,9 +61,12 @@ class ImageField(Field):
 
     @classmethod
     def blank(cls, size, image_mode=None, **kwargs):
-        """
-        :param size:
-        :param image_mode: PIL.Image mode
+        """The blank() class method returns an instance of ImageField which content
+        is set to 0.0.
+
+        :param size: a pair, containing (width, height) of the field.
+        :param image_mode: str PIL.Image mode
+        See: https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
         :param kwargs: these are passed to the class constructor
         :return: ImageField instance filled with zeros
         """
@@ -62,53 +75,80 @@ class ImageField(Field):
         return cls(image, **kwargs)
 
     def __init__(self, image, **kwargs):
-        """
+        """The initializer method fills the field instance with the pixel data of the PIL
+        Image passed in the image parameter.
+
         :param image: PIL.Image
         """
         super().__init__(**kwargs)
 
+        # Keep track of the data in its source format
         self._image = image
 
         # convert image as a numpy array of [0, 1] values
         self._data = numpy.asarray(image).transpose(1, 0, 2) / 255
-        # Note: the PIL Image and the numpy array have their coordinates swapped
-        # The reason is PIL.Image.size: (width, height) while numpy.ndarray.shape is (rows, columns)
-        # Hence the transpose() call
+        # Note: the PIL Image and the numpy array have their coordinates swapped.
+        # The reason is PIL.Image.size: (width, height) while numpy.ndarray.shape is (rows, columns).
+        # Hence the transpose() call.
 
-        self._data_written = True
+        # The _data_written private property tells if the current content of _image
+        # ISN'T the same as the _data property that contains the numpy representation.
+        self._data_written = False  # for now, they are the same
 
+        # If the field is read only, configure the internal numpy data representation accordingly.
         if self.io_mode == Field.IOMode.IN:
             # The data should not be changed
             self._data.setflags(write=False)
 
     @property
     def image(self):
+        """The image() method returns a PIL Image representation of the field data.
+
+        :return: PIL.Image
+        """
         if self._data_written:
             # convert data back to an image
             # rebuild the image from the numpy data
             self._image = Image.fromarray((self._data.transpose(1, 0, 2) * 255).astype(numpy.uint8))
-            self._data_written = False
+            print("convert numpy to pil")
 
         return self._image
 
     @property
     def size(self):
+        """The size() method returns the 2D size of the ImageField.
+
+        :return: a pair, containing (width, height) of the field.
+        """
         return self._image.size
 
     @property
     def width(self):
-        return self._image.size[0]
+        """The field width
+
+        :return: int
+        """
+        return self._image.width
 
     @property
     def height(self):
-        return self._image.size[1]
+        """The field height
+
+        :return: int
+        """
+        return self._image.height
 
     @property
     def depth(self):
+        """The field depth
+
+        :return: int
+        """
         return len(self._image.getbands())
 
     @property
     def data(self):
+        """The numpy data of the field"""
         return self._data
 
     @data.setter
@@ -116,20 +156,30 @@ class ImageField(Field):
         self._data = data
 
     def __getitem__(self, idx):
-        """
-        Index 0 is the abscissa
-        Index 1 is the ordinate
-        Index 3 is the color component_select
+        """The __getitem__() special method defines the interface to read the data
+        in the field.
 
-        TODO: a better documentation
+        Index 0 is the abscissa. Its value is constrained by the width of the field.
+        Index 1 is the ordinate. Its value is constrained by the height of the field.
+        Index 2 is the color component selector. Its value is constrained by the depth of the field.
+
+        See: https://docs.python.org/3/reference/datamodel.html#object.__getitem__
+
         :param idx: slice
         :return: a value
         """
         return self._data[idx]
 
     def __setitem__(self, idx, value):
-        """
-        TODO: a better documentation
+        """The __setitem__() special method defines the interface to write the data
+        in a field.
+
+        Index 0 is the abscissa. Its value is constrained by the width of the field.
+        Index 1 is the ordinate. Its value is constrained by the height of the field.
+        Index 2 is the color component selector. Its value is constrained by the depth of the field.
+
+        See: https://docs.python.org/3/reference/datamodel.html#object.__setitem__
+
         :param idx: slice
         :param value:
         :return: None
@@ -139,11 +189,14 @@ class ImageField(Field):
 
     def is_in(self, coordinates):
         """Tests if some coordinates are within the field.
-        If a coordinate value is None, it will be be ignored. So calling my_field.in_in((3, None, 2))
+        If a coordinate value is None, it will be be ignored. So calling my_field.is_in((3, None, 2))
         will only check the first and the third coordinates against the field dimensions.
 
-        Note: Even if the PILImageFields are implemented with numpy arrays accepting negative indices,
-        the is_in() method will return False for any negative coordinates."""
+        Note: Even if the ImageFields are implemented with numpy arrays accepting negative indices,
+        the is_in() method will return False for any negative coordinates.
+
+        :param coordinates: tuple
+        """
         for length, coordinate in zip(self._data.shape, coordinates):
             if coordinate is not None and (coordinate < 0 or coordinate >= length):
                 return False
@@ -157,6 +210,23 @@ class ImageField(Field):
 
 
 if __name__ == "__main__":
-    image_field = ImageField('images/Edward Hopper_Nighthawks_1942.jpg')
-    image_field.image.show()
+    # Create a blank ImageField of 10 by 10 cells
+    # image_mode="RGBA" makes it correspond to an all black transparent image of 10x10 pixels.
+    # And make the field readable and writable.
+    image_field = ImageField.blank((10, 10), image_mode="RGBA", io_mode=ImageField.IOMode.INOUT)
 
+    # Put a vector of 1s in the middle of the field
+    # It will correspond to a solid white pixel in the image
+    image_field[image_field.width // 2, image_field.height // 2] = 1
+
+    # Put another vector at a cell in the field
+    # It will correspond to a solid red pixel in the image
+    image_field[image_field.width // 2, image_field.height // 4] = (1, 0, 0, 1)
+
+    # Set the 4th component of a cell in the field to 1
+    # It will make solid (instead of transparent) the corresponding point in the image
+    # (this will be a black dot as the image background is black)
+    image_field[image_field.width // 4, image_field.height // 2, 3] = 1
+
+    # Get the field back as an image and display it
+    image_field.image.show()

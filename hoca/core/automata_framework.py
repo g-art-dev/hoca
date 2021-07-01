@@ -44,7 +44,7 @@ class Field(ABC):
         """The Field class initializer takes one keyword parameter. It is used to specify
         the accessibility of the data in the field structure.
 
-        :type io_mode: IOMode enum
+        :param io_mode: IOMode enum (IN by default)
         """
         self.io_mode = io_mode
 
