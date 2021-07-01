@@ -141,9 +141,9 @@ class AutomatonStatus:
     The class defines 3 states:
     - DEAD: the automaton is dead it will not be run on the next generation.
     - ALIVE: the automaton is dead it will not be run on the next generation.
-    - RESPAWN: the automaton is dead but should or may be resurrected and ran on the
+    - RESPAWN: the automaton is dead but should or may be resurrected on the
       next generation. Note that the exact semantics of the RESPAWN status is left to
-      the appreciation of the implementer of the automata's class.
+      the appreciation of the implementer of the population class.
     """
 
     DEAD = 0

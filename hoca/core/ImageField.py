@@ -110,7 +110,6 @@ class ImageField(Field):
             # convert data back to an image
             # rebuild the image from the numpy data
             self._image = Image.fromarray((self._data.transpose(1, 0, 2) * 255).astype(numpy.uint8))
-            print("convert numpy to pil")
 
         return self._image
 
