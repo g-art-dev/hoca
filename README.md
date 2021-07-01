@@ -33,9 +33,9 @@ or the result data produced by them. Fields can also be both source and result a
 this way the automata can modify the field *in place*.  
 
 For this purpose fields have an io_mode property that defines if they are:  
-- readable: io_mode == Field.IOMode.IN
-- writable: io_mode == Field.IOMode.OUT
-- readable and writable: io_mode == Field.IOMode.INOUT
+- readable: `io_mode == Field.IOMode.IN`
+- writable: `io_mode == Field.IOMode.OUT`
+- readable and writable: `io_mode == Field.IOMode.INOUT`
 
 The `ImageField` class provides two convenience class methods:
 - `from_image()` that creates an ImageField instance from an image file,

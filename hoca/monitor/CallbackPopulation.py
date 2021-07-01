@@ -48,8 +48,6 @@ class CallbackPopulation(BasicPopulation):
         self.callbacks.append(callback_instance)
 
     def play(self, stop_after=None, **kwargs):
-        stop_after = stop_after if stop_after is not None else self.stop_after
-
         start_time = time.time()
         for _ in range(stop_after):
             if self.run() != self.Status.RUNNABLE:
@@ -105,7 +103,7 @@ class LogProgressCallback(Callback):
     def callback(self, elapsed_time):
         if self.activation_condition_function(self.population):
             # Some progress has been done, log it
-            logging.info(f"generation = {self.population.generation} "
+            logging.info(f"{self.population.describe()} "
                          f"(elapsed time {elapsed_time:.3f}s, average {self.population.generation / elapsed_time:.3f}gps)")
 
 
