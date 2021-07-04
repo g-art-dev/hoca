@@ -118,8 +118,12 @@ class Automaton(ABC):
     @abstractmethod
     def run(self):
         """The run() abstract method has to be implemented in Automaton subclasses in order the
-        define what an automaton has to do on each generation. This method will be also in charge
-        of updating the automaton status property on each generation."""
+        define what an automaton has to do on each generation."""
+        pass
+
+    @abstractmethod
+    def get_status(self):
+        """The get_status() abstract method subclasses implementation will return the status of an automaton."""
         pass
 
     @classmethod

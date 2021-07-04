@@ -54,29 +54,110 @@ The `Population` abstract class (in the `hoca.core.automata_framework` module) p
 of definitions of the necessary methods for the automata population operation. The implementation of
 these methods is provided in the `BasicPopulation` class (in the `hoca.core.BasicPopulation` module).
 
-There are two methods:
+`BasicPopulation` offers two main methods:
 - `run()` which runs all the automata once (i.e. one generation),
 - `play()` which runs all the automata for multiple generations.
 
-The first is the most complex of the two as `play()` simply calls `run()` repeatedly.
+The first is the most *complex* of the two as `play()` simply calls `run()` repeatedly.
 
-##### `hoca.core.BasicPopulation`
+`BasicPopulation` implements every features needed to achieve some task with a population of automata
+(or at least the features we wanted to investigate), and it's quite easy to use:
 
-BasicPopulation class inherits of the Population class and implements the base functionalities
-of a population:
+1. Build a dictionary referencing one or more fields,
+   
+2. instantiate a `BasicPopulation` passing the field dictionary and an automata class to it,
+   
+3. play the population for a while.
 
-- It instantiates the automata,
-- it controls if the died automata are respawned for the next generation,
-- it may stop the execution of the automata population after a predefined number
-  of generations,
-- it allows to shuffle the automata's order of execution.
+The result of the automata process will be in the fields and that's maybe all one want. However, to have
+a clearer view on what's going on with the automata population or for debugging purpose, `hoca` provides
+a `BasicPopulation` subclass: The `CallbackPopulation` (in the `hoca.monitor` module).
 
-##### `hoca.monitor.CallbackPopulation`
-CallbackPopulation class inherits of the BasicPopulation class. It provides a way to
-monitor the automata population throughout the successive generations.
+The `CallbackPopulation` works the same as the `BasicPopulation` but it allows providing callbacks that are
+invoked at the end of each generation (more on that below). These callbacks can log some information about
+the state of the population or build a video of the movements of the automata.
 
-CallbackPopulation module contains both the CallbackPopulation population class and 
-the Callback class hierachy.
+#### Automata class
+
+The `Automata` abstract class (in the `hoca.core.automata_framework` module) defines the methods all
+automaton classes must implement. There are three important methods:
+
+- The `build_field_dict()` class method is responsible for building a well-formed field dictionary in order
+  for the automata of this class to be able to process the data they contain. The field dictionary will be
+  passed to the population later on.
+  
+- The `run()` method defines the behaviour of each automaton instance of the implemented `Automaton`
+  class. The `run()` method is in charge of:
+  - Moving the automaton, and
+  - updating the field(s).
+  
+- The `get_status()` method computes and returns the current status of the automaton. This method will be
+  invoked on each generation for each automaton.
+  
+### Getting started with hoca
+
+The `hoca.demo.LiteEdgeAutomaton` module provides the `LiteEdgeAutomaton` automata class. These automata
+crawl an `ImageField` containing an image, and fill another `ImageField` with the contours found 
+in the first.
+
+We will now see how to write some code use this class: We have to build a field dictionary
+to provide the source image and receive the contours, constitute a population of `LiteEdgeAutomaton`,
+and then *play* the population. Here is the code:
+
+```python
+import random
+
+from hoca.core.BasicPopulation import BasicPopulation
+from hoca.demo.LiteEdgeAutomaton import LiteEdgeAutomaton
+
+# It may be of some interest to init the pseudo random generator to get consistent result
+# across multiple runs. This is optional.
+random.seed('This is the seed')
+
+# Build field
+field_dict = LiteEdgeAutomaton.build_field_dict('images/Edward Hopper_Nighthawks_1942.jpg')
+
+# Create the automata population
+automata_count = 3800
+automata_population = BasicPopulation(field_dict, automata_count, LiteEdgeAutomaton)
+
+# Play the population
+automata_population.play(stop_after=2700)
+
+# Display the result
+field_dict["result"].image.show()
+```
+
+Obviously, the code starts with the importation of the stuff it will need. It then initializes the field
+dictionary. In order to do that, it calls the `build_field_dict()` convenience class method of the automata
+class, passing it the image to process. In this case, the dictionary returned contains two items the
+`"source"` field and the `"result"` field.  
+Note the parameters of `build_field_dict()` may change from class to class as the data to be processed may
+differ.
+
+The automata population is created by instantiating the `BasicPopulation` class. The program passes the field
+dictionary, the number of automata to instantiate and the class of the automata to it. The population is
+then played for 2700 generations by calling the `play()` method.
+
+Finally, the result field is displayed as an image. The field dictionary may also be accessed through the
+corresponding property of the population instance (`automata_population.field_dict` here).
+
+![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](images/Edward Hopper_Nighthawks_1942.jpg)
+
+As the image representation of a field is a PIL Image class instance, it can be saved or manipulated in many
+ways. See the [Pillow Image module documentation](https://pillow.readthedocs.io/en/stable/reference/Image.html)
+for more information.
+
+One can see the number of automata to instantiate or the number of generations as kind of magic numbers.
+They depend on the job the automata are doing, or the data provided. For instance, these numbers have
+probably to be increased if the source image is larger. 
+In the case of the `LiteEdgeAutomaton`, these numbers are discussed in [1].
+
+#### Let's make a video
+
+
+
+  
 
 ## Limitations
 
@@ -100,3 +181,9 @@ The library is copyrighted by its contributors (see source file headers).
 
 There is a lot of room for improvements, everyone is welcome to contribute if you find any bug or have idea
 for new features!
+
+## Bibliography
+
+[1] Formenti E., Paquelin JL. (2021) _High Order Cellular Automata for Edge Detection: A Preliminary Study_.
+_In_: Cellular Automata. ACRI 2020. Lecture Notes in Computer Science, vol 12599. Springer,
+Cham. https://doi.org/10.1007/978-3-030-69480-7_9
