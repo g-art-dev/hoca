@@ -61,11 +61,37 @@ class CallbackPopulation(BasicPopulation):
 
 class Callback(ABC):
     def __init__(self, population, base_directory=None, activation_condition_function=(lambda p: True)):
+        """The Callback abstract class initializer method prepares some common properties
+        of the subclasses. It must be passed a reference to the monitored population and has
+        two optional keyword parameters.
+
+        base_directory allows to specify a destination directory for all the files (if any)
+        produced by the monitoring process. By default, the destination will be a timestamped
+        subdirectory of the current directory.
+
+        activation_condition_function is a function controlling how often or when the callbacks
+        will be activated. By default, the registered callback are activated at each generation.
+        The activation_condition_function is a function that takes a population and returns
+        True if the current population state will have to be reported (printed, saved, added to
+        a video, ...) In most cases, the result will depend on the population generation.
+
+        To minimize coding, there are three predefined functions in the class:
+
+        - condition_each_n_generation()
+
+        - condition_at_generation()
+
+        - condition_or()
+
+        :param population: CallbackPopulation
+        :param base_directory: str
+        :param activation_condition_function: a function
+        """
         self.population = population
         self.activation_condition_function = activation_condition_function
 
         if base_directory is None:
-            base_directory = self.population.automata_class.__name__ # describe()
+            base_directory = self.population.automata_class.__name__  # or describe() ?
         # Make the base directory name unique by adding the date and PID
         self.base_directory = f"{base_directory}_{datetime.datetime.now().strftime('%Y%m%d')}_{os.getpid()}"
 
@@ -91,9 +117,31 @@ class Callback(ABC):
 
 class LogProgressCallback(Callback):
     def __init__(self, *args, logfile=None, loglevel=logging.INFO, **kwargs):
+        """The initializer method prepares the logging. It takes two specific keyword parameters to
+        control the destination and the desired level of logging.
+
+        The logfile parameter may receive a string denoting the path of the logfile. It is the responsibility
+        of the caller to ensure the directory which will receive the logfile exists.
+        The logfile parameter may also set to True, in this case the logfile will have a default location
+        depending on the base_directory keyword parameter.
+        If logfile parameter is None (by default), the logging will be reported to the console.
+
+        The loglevel parameter sets the expected level of logging.
+        See: https://docs.python.org/3/library/logging.html#levels
+
+        :param logfile: str, bool or None
+        :param loglevel: int (logging level)
+        """
         super(LogProgressCallback, self).__init__(*args, **kwargs)
 
         if logfile:
+            # If the logfile parameter value is a boolean, it means the logfile will
+            # have a default place
+            if isinstance(logfile, bool):
+                if not os.path.exists(self.base_directory):
+                    os.makedirs(self.base_directory)
+                logfile = os.path.join(self.base_directory, "progress.log")
+
             logging.basicConfig(level=loglevel, filename=logfile)
         else:
             logging.basicConfig(level=loglevel)

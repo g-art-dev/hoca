@@ -15,5 +15,5 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with hoca.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2021.7.0"
+__version__ = "2021.7.1"
 __all__ = ["core", "monitor", "demo"]

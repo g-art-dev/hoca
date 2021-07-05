@@ -69,9 +69,9 @@ The first is the most _complex_ of the two as `play()` simply calls `run()` repe
    
 3. play the population for a while.
 
-The result of the automata process will be in the fields and that's maybe all one want. However, to have
+The result of the automata process will be in the fields and that's maybe all one wants. However, to have
 a clearer view on what's going on with the automata population or for debugging purpose, `hoca` provides
-a `BasicPopulation` subclass: The `CallbackPopulation` (in the `hoca.monitor` module).
+a `BasicPopulation` subclass: The `CallbackPopulation` (in the `hoca.monitor.CallbackPopulation` module).
 
 The `CallbackPopulation` works the same as the `BasicPopulation` but it allows providing callbacks that are
 invoked at the end of each generation (more on that below). These callbacks can log some information about
@@ -100,6 +100,11 @@ The `hoca.demo.LiteEdgeAutomaton` module provides the `LiteEdgeAutomaton` automa
 crawl an `ImageField` containing an image, and fill another `ImageField` with the contours found 
 in the first.
 
+![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](https://github.com/g-art-dev/hoca/raw/main/images/EdwardHopper_Nighthawks_1942.jpg)
+> Edward Hopper. Nighthawks, 1942. (CC0) The Art Institute of Chicago.  
+> [https://www.artic.edu/artworks/111628/nighthawks](https://www.artic.edu/artworks/111628/nighthawks)  
+> (_source field_)
+
 We will now see how to write some code use this class: We have to build a field dictionary
 to provide the source image and receive the contours drawn, constitute a population of `LiteEdgeAutomaton`,
 and then _play_ the population. Here is the code:
@@ -114,8 +119,8 @@ from hoca.demo.LiteEdgeAutomaton import LiteEdgeAutomaton
 # across multiple runs. This is optional.
 random.seed('This is the seed')
 
-# Build field
-field_dict = LiteEdgeAutomaton.build_field_dict('images/Edward Hopper_Nighthawks_1942.jpg')
+# Build the field
+field_dict = LiteEdgeAutomaton.build_field_dict('images/EdwardHopper_Nighthawks_1942.jpg')
 
 # Create the automata population
 automata_count = 3800
@@ -142,13 +147,8 @@ then played for 2700 generations by calling the `play()` method.
 Finally, the result field is displayed as an image. The field dictionary may also be accessed through the
 corresponding property of the population instance (`automata_population.field_dict` here).
 
-![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](images/Edward Hopper_Nighthawks_1942.jpg)
-> Edward Hopper. Nighthawks, 1942. (CC0) The Art Institute of Chicago.  
-> [https://www.artic.edu/artworks/111628/nighthawks](https://www.artic.edu/artworks/111628/nighthawks)  
-> (_source field_)
-
-![Nighthawks contours](images/LiteEdgeAutomation_A3800_I2700_result.jpg)
-> Nighthawks after 2700 generations of 3800 LiteEdgeAutomaton automata.  
+![Nighthawks contours](https://github.com/g-art-dev/hoca/raw/main/images/LiteEdgeAutomation_A3800_I2700_result.jpg)
+> Hopper's Nighthawks after 2700 generations with 3800 LiteEdgeAutomaton automata.  
 > (_result field_)
 
 As the image representation of a field is a PIL Image class instance, it can be saved or manipulated in many
@@ -162,6 +162,51 @@ In the case of the `LiteEdgeAutomaton`, these numbers are discussed in [1].
 
 #### Let's make a video
 
+The `CallbackPopulation` class allows doing various tasks at each generation. For instance, we can aggregate
+result field to produce a video showing the effect of an automata population on a source field.
+
+```python
+import random
+
+from hoca.demo.LiteEdgeAutomaton import LiteEdgeAutomaton
+from hoca.monitor.CallbackPopulation import *
+
+# It may be of some interest to init the pseudo random generator to get consistent result
+# across multiple runs. This is optional.
+random.seed('This is the seed')
+
+# Build the field
+field_dict = LiteEdgeAutomaton.build_field_dict('images/EdwardHopper_Nighthawks_1942.jpg')
+
+# Create the automata population
+automata_count = 3800
+automata_population = CallbackPopulation(field_dict, automata_count, LiteEdgeAutomaton)
+
+# Register the callbacks...
+# A logging callback
+automata_population.register_callback(LogProgressCallback(automata_population))
+# A video building callback
+# video is built from the result fields each 2 generations
+automata_population.register_callback(
+    SaveFieldsVideoCallback(automata_population,
+                            activation_condition_function=Callback.condition_each_n_generation(5)))
+
+# Play the population
+automata_population.play(stop_after=2700)
+```
+
+The code is quite similar to the previous one. But after having initialized the population class, some
+callbacks are registered before playing the population. These callbacks are instances
+of one of the abstract Callback subclass (all defined in the `hoca.monitor.CallbackPopulation` module):
+
+- `LogProgressCallback` logs the progress of the computation in a file or to the console.
+
+- `SaveFieldsImageCallback` and `SaveFieldsVideoCallback` save the fields manipulated by the automata
+  population as a collection of images (stored in a folder) or as a video. 
+
+- `SaveTracesImageCallback` or `SaveTracesVideoCallback` save the trace - the positions or the trajectories -
+  of the automata population as a collection of images (stored in a folder) or as a video. These are
+  particularly useful to debug an automaton code.
 
 
   

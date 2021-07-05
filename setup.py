@@ -27,7 +27,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="hoca",
-    version="2021.7.0",
+    version="2021.7.1",
     description="Provides a set of tools to implement Higher-Order Cellular Automata populations",
     long_description=README,
     long_description_content_type="text/markdown",
