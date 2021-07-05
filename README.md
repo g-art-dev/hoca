@@ -115,7 +115,7 @@ from hoca.demo.LiteEdgeAutomaton import LiteEdgeAutomaton
 random.seed('This is the seed')
 
 # Build field
-field_dict = LiteEdgeAutomaton.build_field_dict('images/Edward Hopper_Nighthawks_1942.jpg')
+field_dict = LiteEdgeAutomaton.build_field_dict('images/EdwardHopper_Nighthawks_1942.jpg')
 
 # Create the automata population
 automata_count = 3800
@@ -142,13 +142,13 @@ then played for 2700 generations by calling the `play()` method.
 Finally, the result field is displayed as an image. The field dictionary may also be accessed through the
 corresponding property of the population instance (`automata_population.field_dict` here).
 
-![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](images/Edward Hopper_Nighthawks_1942.jpg)
+![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](images/EdwardHopper_Nighthawks_1942.jpg)
 > Edward Hopper. Nighthawks, 1942. (CC0) The Art Institute of Chicago.  
 > [https://www.artic.edu/artworks/111628/nighthawks](https://www.artic.edu/artworks/111628/nighthawks)  
 > (_source field_)
 
 ![Nighthawks contours](images/LiteEdgeAutomation_A3800_I2700_result.jpg)
-> Nighthawks after 2700 generations of 3800 LiteEdgeAutomaton automata.  
+> Hopper's Nighthawks after 2700 generations with 3800 LiteEdgeAutomaton automata.  
 > (_result field_)
 
 As the image representation of a field is a PIL Image class instance, it can be saved or manipulated in many

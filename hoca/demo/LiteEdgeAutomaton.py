@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     automata_class = LiteEdgeAutomaton
 
-    image_path = '../../images/Edward Hopper_Nighthawks_1942.jpg'
+    image_path = '../../images/EdwardHopper_Nighthawks_1942.jpg'
 
     # Build field
     field_dict = automata_class.build_field_dict(image_path)
