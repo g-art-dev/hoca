@@ -30,7 +30,7 @@ subclass (in the `hoca.core.ImageField` module) that allows image manipulation.
 
 Fields are data structures that hold the source data processed by an automata population,
 or the result data produced by them. Fields can also be both source and result at the same time,
-this way the automata can modify the field *in place*.  
+this way the automata can modify the field _in place_.  
 
 For this purpose fields have an io_mode property that defines if they are:  
 - readable: `io_mode == Field.IOMode.IN`
@@ -58,7 +58,7 @@ these methods is provided in the `BasicPopulation` class (in the `hoca.core.Basi
 - `run()` which runs all the automata once (i.e. one generation),
 - `play()` which runs all the automata for multiple generations.
 
-The first is the most *complex* of the two as `play()` simply calls `run()` repeatedly.
+The first is the most _complex_ of the two as `play()` simply calls `run()` repeatedly.
 
 `BasicPopulation` implements every features needed to achieve some task with a population of automata
 (or at least the features we wanted to investigate), and it's quite easy to use:
@@ -101,8 +101,8 @@ crawl an `ImageField` containing an image, and fill another `ImageField` with th
 in the first.
 
 We will now see how to write some code use this class: We have to build a field dictionary
-to provide the source image and receive the contours, constitute a population of `LiteEdgeAutomaton`,
-and then *play* the population. Here is the code:
+to provide the source image and receive the contours drawn, constitute a population of `LiteEdgeAutomaton`,
+and then _play_ the population. Here is the code:
 
 ```python
 import random
@@ -143,6 +143,13 @@ Finally, the result field is displayed as an image. The field dictionary may als
 corresponding property of the population instance (`automata_population.field_dict` here).
 
 ![Edward Hopper. Nighthawks, 1942. The Art Institute of Chicago.](images/Edward Hopper_Nighthawks_1942.jpg)
+> Edward Hopper. Nighthawks, 1942. (CC0) The Art Institute of Chicago.  
+> [https://www.artic.edu/artworks/111628/nighthawks](https://www.artic.edu/artworks/111628/nighthawks)  
+> (_source field_)
+
+![Nighthawks contours](images/LiteEdgeAutomation_A3800_I2700_result.jpg)
+> Nighthawks after 2700 generations of 3800 LiteEdgeAutomaton automata.  
+> (_result field_)
 
 As the image representation of a field is a PIL Image class instance, it can be saved or manipulated in many
 ways. See the [Pillow Image module documentation](https://pillow.readthedocs.io/en/stable/reference/Image.html)
@@ -162,8 +169,9 @@ In the case of the `LiteEdgeAutomaton`, these numbers are discussed in [1].
 ## Limitations
 
 At the moment, automata are not aware of each other. This means you can't use the `hoca` library
-to implement the Conway's game of life. You can do it actually, but it will be in O(N²) as each automaton
-will have to look at all other automata in the population to know if some are its neighbours.
+to implement classic automata, the Conway's game of life for instance. You can do it actually,
+but it will be in O(N²) as each automaton will have to look at all other automata in the population
+to know if some are its neighbours.
 
 ## Advertising hoca
 
@@ -172,14 +180,14 @@ were accompanied by a citation naming it; something like:
 
 > This <work> was produced with the `hoca` library (https://pypi.org/project/hoca/).
 
-You could also send us a mail about what you're doing with `hoca`.
+You might also send us a little mail about what you're doing with `hoca`.
 
 ## Contribute !
 `hoca` is an open-source library written at [Villa Arson](https://www.villa-arson.fr/) and
 [I3S](https://www.i3s.unice.fr/) and released on GitHub under the LGPLv3 license.
 The library is copyrighted by its contributors (see source file headers).
 
-There is a lot of room for improvements, everyone is welcome to contribute if you find any bug or have idea
+There is a lot of room for improvements, everyone is welcome to contribute if you find any bug or have ideas
 for new features!
 
 ## Bibliography
