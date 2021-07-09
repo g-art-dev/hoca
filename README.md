@@ -208,8 +208,19 @@ of one of the abstract Callback subclass (all defined in the `hoca.monitor.Callb
   of the automata population as a collection of images (stored in a folder) or as a video. These are
   particularly useful to debug an automaton code.
 
+These callbacks must receive the population as a parameter. They are called on every generation but they can
+also receive an optional so-called activation function (or function generator) in order to control when the
+callback will do its job. For instance, this mechanism could be used to make the callback aggregate some
+data at each generation but only report a summary once in a while.
+The activation function will take the population as parameter and return `True` if some condition has
+occurred (and `False` otherwise).
+In the above example, `Callback.condition_each_n_generation(5)` is a function generator which builds a
+function returning `True` every 5 generations. Hence, the video produced will have `2700 / 5` frames (it's
+21.6s at 25fps).
 
-  
+
+
+
 
 ## Limitations
 

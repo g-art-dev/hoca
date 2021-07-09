@@ -34,8 +34,14 @@ import av
 
 
 class CallbackPopulation(BasicPopulation):
-    def __init__(self, field_dict, population_size, automata_class, **kwargs):
-        super(CallbackPopulation, self).__init__(field_dict, population_size, automata_class, **kwargs)
+    def __init__(self, *args, **kwargs):
+        """The CallbackPopulation instance initializer expects the same parameters as
+        the BasicPopulation and does the same.
+
+        :param args: positional parameters
+        :param kwargs: keyword parameters
+        """
+        super(CallbackPopulation, self).__init__(*args, **kwargs)
 
         self.callbacks = []
 
@@ -47,7 +53,13 @@ class CallbackPopulation(BasicPopulation):
         """
         self.callbacks.append(callback_instance)
 
-    def play(self, stop_after=None, **kwargs):
+    def play(self, stop_after=1):
+        """From the automata perspective the play() method behaves the same way as
+        the BasicPopulation.play() method. However, it also call all the registered callbacks
+        after every generation.
+
+        :param stop_after: int
+        """
         start_time = time.time()
         for _ in range(stop_after):
             if self.run() != self.Status.RUNNABLE:
@@ -60,6 +72,7 @@ class CallbackPopulation(BasicPopulation):
 
 
 class Callback(ABC):
+    """The Callback abstract class """
     def __init__(self, population, base_directory=None, activation_condition_function=(lambda p: True)):
         """The Callback abstract class initializer method prepares some common properties
         of the subclasses. It must be passed a reference to the monitored population and has
@@ -97,14 +110,32 @@ class Callback(ABC):
 
     @staticmethod
     def condition_each_n_generation(report_progress_each):
+        """The condition_each_n_generation() static method is a function generator. The produced function
+        will expect a population as parameter and will return True if the generation number of the
+        population is divisible by report_progress_each, the parameter passed to the function generator.
+
+        :param report_progress_each: int
+        """
         return lambda population: (population.generation % report_progress_each) == 0
 
     @staticmethod
     def condition_at_generation(generation):
+        """The condition_at_generation() static method is a function generator. The produced function
+        will expect a population as parameter and will return True if the generation number of the
+        population equals generation, the parameter passed to the function generator.
+
+        :param generation: int
+        """
         return lambda population: population.generation == generation
 
     @staticmethod
     def condition_or(activation_condition_function_list):
+        """The condition_or() static method is a function generator. The produced function
+        will expect a population as parameter and will return True if (at least) one of the
+        activation function returns True.
+
+        :param activation_condition_function_list: activation function list
+        """
         return lambda population: any([activation_condition_function(population)
                                        for activation_condition_function in activation_condition_function_list])
 
@@ -152,7 +183,8 @@ class LogProgressCallback(Callback):
         if self.activation_condition_function(self.population):
             # Some progress has been done, log it
             logging.info(f"{self.population.describe()} "
-                         f"(elapsed time {elapsed_time:.3f}s, average {self.population.generation / elapsed_time:.3f}gps)")
+                         f"(elapsed time {elapsed_time:.3f}s,"
+                         f" average {self.population.generation / elapsed_time:.3f}gps)")
 
 
 class ImageCallback(Callback):
@@ -179,17 +211,18 @@ class ImageCallback(Callback):
         return f"{str(self.population.generation).zfill(self.zero_padding_length)}"
 
 
-class SaveTracesImageCallback(ImageCallback):
-    class Trace(IntFlag):
-        TRAJECTORIES = 0b01
-        POSITIONS = 0b10
+class Trace(IntFlag):
+    TRAJECTORIES = 0b01
+    POSITIONS = 0b10
 
+
+class SaveTracesImageCallback(ImageCallback):
     def __init__(self, *args, trace=Trace.TRAJECTORIES+Trace.POSITIONS, **kwargs):
         super(SaveTracesImageCallback, self).__init__(*args, **kwargs)
 
         field_size = self._get_field_size()
 
-        if trace & self.Trace.TRAJECTORIES:
+        if trace & Trace.TRAJECTORIES:
             # Create a directory to save the automata trajectories
             self.trajectories_save_path = os.path.join(self.base_directory, f"trajectories")
             if not os.path.exists(self.trajectories_save_path):
@@ -199,7 +232,7 @@ class SaveTracesImageCallback(ImageCallback):
         else:
             self.trajectories_monitor = None
 
-        if trace & self.Trace.POSITIONS:
+        if trace & Trace.POSITIONS:
             # Create a directory to save the automata position
             self.positions_save_path = os.path.join(self.base_directory, f"positions")
             if not os.path.exists(self.positions_save_path):
@@ -353,10 +386,6 @@ class VideoCallback(Callback):
 
 
 class SaveTracesVideoCallback(VideoCallback):
-    class Trace(IntFlag):
-        TRAJECTORIES = 0b01
-        POSITIONS = 0b10
-
     def __init__(self, *args, trace=Trace.TRAJECTORIES+Trace.POSITIONS, **kwargs):
         super(SaveTracesVideoCallback, self).__init__(*args, **kwargs)
 
@@ -370,7 +399,7 @@ class SaveTracesVideoCallback(VideoCallback):
                 field_size = subfield.size
                 break
 
-        if trace & self.Trace.TRAJECTORIES:
+        if trace & Trace.TRAJECTORIES:
             # Prepare a monitor to keep track of the automata trajectories
             self.trajectories_monitor = PILMonitor(field_size, ColorGradient.create())
 
@@ -381,7 +410,7 @@ class SaveTracesVideoCallback(VideoCallback):
             self.trajectories_monitor = None
             self.trajectories_avdata = None
 
-        if trace & self.Trace.POSITIONS:
+        if trace & Trace.POSITIONS:
             # Prepare a monitor to keep track of the automata positions
             self.positions_monitor = PILMonitor(field_size, ColorGradient.create(gradient_name='cgy'))
 
@@ -460,5 +489,3 @@ class SaveFieldsVideoCallback(VideoCallback):
     def __del__(self):
         for avdata in self.subfield_avdata.values():
             self.__class__._close_avdata(avdata)
-
-
