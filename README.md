@@ -186,7 +186,7 @@ automata_population = CallbackPopulation(field_dict, automata_count, LiteEdgeAut
 # A logging callback
 automata_population.register_callback(LogProgressCallback(automata_population))
 # A video building callback
-# video is built from the result fields each 2 generations
+# video is built from the result fields each 5 generations
 automata_population.register_callback(
     SaveFieldsVideoCallback(automata_population,
                             activation_condition_function=Callback.condition_each_n_generation(5)))
@@ -209,17 +209,30 @@ of one of the abstract Callback subclass (all defined in the `hoca.monitor.Callb
   particularly useful to debug an automaton code.
 
 These callbacks must receive the population as a parameter. They are called on every generation but they can
-also receive an optional so-called activation function (or function generator) in order to control when the
-callback will do its job. For instance, this mechanism could be used to make the callback aggregate some
-data at each generation but only report a summary once in a while.
+also receive an optional so-called activation function (or an activation function generator) in order
+to control when the callback will do its job.
+For instance, this mechanism could be used to make the callback aggregate some data at each generation but
+only report a summary once in a while.
 The activation function will take the population as parameter and return `True` if some condition has
 occurred (and `False` otherwise).
-In the above example, `Callback.condition_each_n_generation(5)` is a function generator which builds a
-function returning `True` every 5 generations. Hence, the video produced will have `2700 / 5` frames (it's
-21.6s at 25fps).
+In the above example, `Callback.condition_each_n_generation(5)` is a function generator which builds an
+activation function returning `True` every 5 generations. Hence, the video produced will have `2700 / 5`
+frames (it's 21.6s at 25fps).
+
+It may be interesting to trace the behaviour of the automata population, for this purpose one can register
+a `SaveFieldsImageCallback` instance (or a `SaveFieldsVideoCallback`):
+
+```python
+    # A callback tracing the automata trajectories
+    automata_population.register_callback(
+        SaveTracesImageCallback(automata_population,
+                                trace=Trace.TRAJECTORIES,
+                                activation_condition_function=Callback.condition_at_generation(stop_after)))
+```
 
 
 
+### Coding an automaton
 
 
 ## Limitations

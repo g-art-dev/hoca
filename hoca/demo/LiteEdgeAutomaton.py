@@ -216,7 +216,7 @@ class LiteEdgeAutomaton(Automaton):
 
 if __name__ == "__main__":
     from hoca.monitor.CallbackPopulation import CallbackPopulation, SaveFieldsVideoCallback, SaveFieldsImageCallback, \
-        SaveTracesImageCallback, SaveTracesVideoCallback, LogProgressCallback, Callback
+        SaveTracesImageCallback, SaveTracesVideoCallback, LogProgressCallback, Callback, Trace
 
     # Init the pseudo random generator to be able to replay the same population behaviour
     # This is optional
@@ -232,24 +232,26 @@ if __name__ == "__main__":
 
     # Create the automata population and play it
     # The number of run is such that an automaton will process about 52 pixels
-    automata_count = 1000
-    stop_after = 52 * first_field.width * first_field.height // automata_count
-    stop_after = 1500
+    automata_count = 3800
+    # stop_after = 52 * first_field.width * first_field.height // automata_count
+    stop_after = 2700
     automata_population = CallbackPopulation(field_dict, automata_count, automata_class,
-                                             stop_after=stop_after,
+                                             generation_to_complete=stop_after,
                                              auto_respawn=False)
 
-    # register callbacks
+    # Register the callbacks...
+    # A logging callback
     automata_population.register_callback(LogProgressCallback(automata_population))
-
+    # A video building callback
+    # video is built from the result fields each 5 generations
     automata_population.register_callback(
         SaveFieldsVideoCallback(automata_population,
-                                activation_condition_function=Callback.condition_each_n_generation(2)))
+                                activation_condition_function=Callback.condition_each_n_generation(5)))
+    # A callback tracing the automata trajectories
     automata_population.register_callback(
         SaveTracesImageCallback(automata_population,
+                                trace=Trace.TRAJECTORIES,
                                 activation_condition_function=Callback.condition_at_generation(stop_after)))
 
-    # automata_population.register_callback(SaveFieldsImageCallback(automata_population))
-    # automata_population.register_callback(SaveTracesImageCallback(automata_population))
-
-    automata_population.play()
+    # Play the population
+    automata_population.play(stop_after=stop_after)
