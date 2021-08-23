@@ -135,17 +135,18 @@ field_dict["result"].image.show()
 
 Obviously, the code starts with the importation of the stuff it will need. It then initializes the field
 dictionary. In order to do that, it calls the `build_field_dict()` convenience class method of the automata
-class, passing it the image to process. In this case, the dictionary returned contains two items the
+class, passing the image to process to it. In this case, the dictionary returned contains two items the
 `"source"` field and the `"result"` field.  
 Note the parameters of `build_field_dict()` may change from class to class as the data to be processed may
 differ.
 
 The automata population is created by instantiating the `BasicPopulation` class. The program passes the field
-dictionary, the number of automata to instantiate and the class of the automata to it. The population is
-then played for 2700 generations by calling the `play()` method.
+dictionary, the number of automata to instantiate and the class of the automata to it. The automata
+The population is
+then played for 2700 generations by calling the `play()` method. 
 
-Finally, the result field is displayed as an image. The field dictionary may also be accessed through the
-corresponding property of the population instance (`automata_population.field_dict` here).
+The program ends displaying the result field as an image. The field dictionary may also be accessed through the
+corresponding property of the population instance (here `automata_population.field_dict`).
 
 ![Nighthawks contours](https://github.com/g-art-dev/hoca/raw/main/images/LiteEdgeAutomation_A3800_I2700_result.jpg)
 > Hopper's Nighthawks after 2700 generations with 3800 LiteEdgeAutomaton automata.  
@@ -155,15 +156,17 @@ As the image representation of a field is a PIL Image class instance, it can be 
 ways. See the [Pillow Image module documentation](https://pillow.readthedocs.io/en/stable/reference/Image.html)
 for more information.
 
-One can see the number of automata to instantiate or the number of generations as kind of magic numbers.
-They depend on the job the automata are doing, or the data provided. For instance, these numbers have
+In the previous program, one can see the number of automata to instantiate or the number of generations as kind
+of magic numbers.
+These numbers depend on the job the automata are doing, or the data provided. For instance, these numbers have
 probably to be increased if the source image is larger. 
 In the case of the `LiteEdgeAutomaton`, these numbers are discussed in [1].
 
 #### Let's make a video
 
 The `CallbackPopulation` class allows doing various tasks at each generation. For instance, we can aggregate
-result field to produce a video showing the effect of an automata population on a source field.
+the result field at each generation to produce a video showing the effect of an automata population on a
+source field:
 
 ```python
 import random
@@ -180,6 +183,7 @@ field_dict = LiteEdgeAutomaton.build_field_dict('images/EdwardHopper_Nighthawks_
 
 # Create the automata population
 automata_count = 3800
+stop_after = 2700
 automata_population = CallbackPopulation(field_dict, automata_count, LiteEdgeAutomaton)
 
 # Register the callbacks...
@@ -192,25 +196,25 @@ automata_population.register_callback(
                             activation_condition_function=Callback.condition_each_n_generation(5)))
 
 # Play the population
-automata_population.play(stop_after=2700)
+automata_population.play(stop_after=stop_after)
 ```
 
-The code is quite similar to the previous one. But after having initialized the population class, some
+This code is quite similar to the previous one. But after having initialized the population class, some
 callbacks are registered before playing the population. These callbacks are instances
-of one of the abstract Callback subclass (all defined in the `hoca.monitor.CallbackPopulation` module):
+of one of the abstract `Callback` subclass (all defined in the `hoca.monitor.CallbackPopulation` module):
 
 - `LogProgressCallback` logs the progress of the computation in a file or to the console.
 
 - `SaveFieldsImageCallback` and `SaveFieldsVideoCallback` save the fields manipulated by the automata
   population as a collection of images (stored in a folder) or as a video. 
 
-- `SaveTracesImageCallback` or `SaveTracesVideoCallback` save the trace - the positions or the trajectories -
+- `SaveTracesImageCallback` or `SaveTracesVideoCallback` save the trace - the positions and/or the trajectories -
   of the automata population as a collection of images (stored in a folder) or as a video. These are
   particularly useful to debug an automaton code.
 
 These callbacks must receive the population as a parameter. They are called on every generation but they can
 also receive an optional so-called activation function (or an activation function generator) in order
-to control when the callback will do its job.
+to control when the callback will have to do its job.
 For instance, this mechanism could be used to make the callback aggregate some data at each generation but
 only report a summary once in a while.
 The activation function will take the population as parameter and return `True` if some condition has
@@ -219,8 +223,7 @@ In the above example, `Callback.condition_each_n_generation(5)` is a function ge
 activation function returning `True` every 5 generations. Hence, the video produced will have `2700 / 5`
 frames (it's 21.6s at 25fps).
 
-It may be interesting to trace the behaviour of the automata population, for this purpose one can register
-a `SaveFieldsImageCallback` instance (or a `SaveFieldsVideoCallback`):
+We may add the following lines to trace the trajectories of the automata:
 
 ```python
     # A callback tracing the automata trajectories
@@ -230,9 +233,44 @@ a `SaveFieldsImageCallback` instance (or a `SaveFieldsVideoCallback`):
                                 activation_condition_function=Callback.condition_at_generation(stop_after)))
 ```
 
-
-
 ### Coding an automaton
+
+Writing the code of an automaton needs to take care of few important things. We will illustrate the whole
+process by describing the structure of an automata class and writing a toy arty automata class. 
+
+An automata class must inherit the `Automaton` abstract class and implement some mandatory methods:
+
+- `build_field_dict()` class method. This method will be used to build a proper field dictionary for the
+  automaton we are writing. The field dictionary may contain one or more fields. The number of fields depends
+  on what the automata are processing. The name (or keys as they're stored in a Python dictionary) can be
+  chosen freely.
+  
+- `run()` instance method. This method will contain the code controlling the behaviour of the automaton.
+  It will be called on each generation by the class that handles the automata population (probably 
+  `BasicPopulation` or `CallbackPopulation`). It will have to:
+  
+  - Read the value at the current automaton position of any provided input (or input-output) field.
+  
+  - Update the state of the automaton.
+  
+  - Move the automaton.
+  
+  These tasks may be done in any order (compatible with the purpose of the automaton). Some of them can be omitted
+  if they aren't necessary. 
+  
+- `get_status()` instance method. This method will return the current status of the automaton, an instance
+  of the `hoca.core.automata_framework.AutomatonStatus` class.
+  
+- `describe()` class method. This method will return a string describing the automata class.
+
+We also have to implement the `__init__()` method without omitting to call `super().__init__()` to invoke
+the corresponding function of the parent class. As we are interested in higher-order automata,
+the `__init__()` method has the responsibility to initialize the state or "memory" of the automaton for
+later use. 
+
+```python
+```
+
 
 
 ## Limitations

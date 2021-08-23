@@ -25,49 +25,28 @@ from hoca.core.ImageField import ImageField
 from hoca.core.utilities import AutomataUtilities
 
 
-class LiteEdgeAutomaton(Automaton):
+class SpreadingAutomaton(Automaton):
     """
-    The LiteEdgeAutomaton is a rework of EdgeAutomaton.
-    As before, it works on one color component selected with one of the ComponentSelect.
-    But it also adds various controls:
-        direction_select: int or DirectionSelect
-        roughness: the lesser, the more the automaton is sensitive to small image edges
-        edge_factor:
+    The SpreadingAutomaton is a toy automata class. It spreads the pixels af an image
+    in some way similar to the Gimp's Spread filter.
+
+    See: https://docs.gimp.org/2.10/en/gimp-filter-noise-spread.html
     """
-    class ComponentSelect(Enum):
-        R = auto()
-        G = auto()
-        B = auto()
-        A = auto()
-        GREATEST = auto()
-        RANDOM = auto()
 
-    class DirectionSelect(Enum):
-        FOLLOW_EDGES = auto()
-        RANDOM_CONSTANT = auto()
-
-    component_select = ComponentSelect.GREATEST
-    direction_select = DirectionSelect.RANDOM_CONSTANT
-    roughness = 0.05  # about 12 / 255
-    edge_factor = 2
-    smoothness = 0.05
+    """
+    The amount class variable determines how far a pixel will be moved..
+    """
+    amount = 5
 
     @classmethod
     def describe(cls, short=True):
         if short:
-            return f"{super().describe(short=short)}-" \
-                   f"{cls.component_select}-{cls.direction_select}-" \
-                   f"r{cls.roughness}-ef{cls.edge_factor}-s{cls.smoothness}"
+            return "A short description of the automata class configuration"
         else:
-            return f"""{super().describe(short=short)}
-    component_select: {cls.component_select}
-    direction_select: {cls.direction_select}
-    roughness: {cls.roughness}
-    edge_factor: {cls.edge_factor}
-    smoothness: {cls.smoothness}"""
+            return "A longer description of the automata class configuration"
 
     @classmethod
-    def build_field_dict(cls, image_path, *args, **kwargs):
+    def build_field_dict(cls, image_path):
         source_field = ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB")
         return {'source': source_field,
                 'result': ImageField.blank(source_field.size, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}

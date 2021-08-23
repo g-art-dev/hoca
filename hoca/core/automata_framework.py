@@ -129,13 +129,15 @@ class Automaton(ABC):
     @classmethod
     def describe(cls, short=True):
         """The describe() method is a convenience method used to get some textual information
-        about an automaton (e.g. its status).
+        about an automata class.
         This method takes an optional boolean keyword parameter named short to specify if the
         reply has to be short or not.
 
         :type short: bool
         :return: str
         """
+        # TODO: this is a class method, should it be an instance method instead?
+        #  Or do we need a separate method to report the current state of the automaton?
         return cls.__name__
 
 
