@@ -16,9 +16,6 @@
 # along with hoca.  If not, see <http://www.gnu.org/licenses/>.
 
 import random
-from enum import Enum, auto
-
-import numpy
 
 from hoca.core.automata_framework import Automaton, AutomatonStatus
 from hoca.core.ImageField import ImageField
@@ -34,202 +31,136 @@ class SpreadingAutomaton(Automaton):
     """
 
     """
-    The amount class variable determines how far a pixel will be moved..
+    The amount class variable determines how far a pixel will be moved.
     """
     amount = 5
 
     @classmethod
-    def describe(cls, short=True):
-        if short:
-            return "A short description of the automata class configuration"
-        else:
-            return "A longer description of the automata class configuration"
-
-    @classmethod
     def build_field_dict(cls, image_path):
+        """The build_field_dict() class method builds a field distionary to be used with a population of
+        SpreadingAutomaton.
+
+        :parameter image_path: PIL Image
+        :return: a field dictionary"""
+        # Build a field dictionary:
+        # - The source field is a read-only field built from the provided image.
+        # - The result field is a blank write-only field the same size of the source field.
         source_field = ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB")
         return {'source': source_field,
                 'result': ImageField.blank(source_field.size, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
 
-    def __init__(self, automata_population):
-        assert 0 <= self.__class__.edge_factor <= 2,\
-            f"edge_factor must be in [0, 2] (was {self.__class__.edge_factor})"
-        assert isinstance(self.__class__.direction_select, int) or \
-            isinstance(self.__class__.direction_select, self.__class__.DirectionSelect), \
-            f"direction_select must be either an int or a {self.__class__.DirectionSelect} enum " \
-            f"(was {self.__class__.direction_select})"
+        # As the course of the automata is random (see the run() method below), the source and/or result fields
+        # will probably not be covered entirely and the result field will contain black/blank pixels. In order to
+        # have a more interesting result without those blank spots, one can pre-fill the result field with the
+        # source image:
+        # - The source field is a read-only field built from the provided image.
+        # - The result field is a write-only field built from the provided image.
+        return {'source': ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB"),
+                'result': ImageField.from_image(image_path, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
 
+    def __init__(self, automata_population):
         super().__init__()
 
-        self.automata_population = automata_population
+        # Keep a shortcut to the fields, it improves readability
+        # and may be efficient as it is accessed quite often.
+        # Set a shortcut to the fields from the fields dictionary
+        self.source_field = automata_population.field_dict['source']
+        self.result_field = automata_population.field_dict['result']
 
-        # keep a shortcut to the fields, it improves readability
-        # and may be efficient as it is called quite often
-        # set a shortcut to the fields from the fields dictionary
-        self.source_field = self.automata_population.field_dict['source']
-        self.destination_field = self.automata_population.field_dict['result']
-
-        # set an initial random position for the automaton
+        # Set an initial random position for the automaton
         self.x = random.randint(0, self.source_field.width - 1)
         self.y = random.randint(0, self.source_field.height - 1)
 
-        # select on which color component the automaton will work
-        if self.__class__.component_select == self.__class__.ComponentSelect.R:
-            # select the red component which index is 0
-            self.used_color_component = 0
-        elif self.__class__.component_select == self.__class__.ComponentSelect.G:
-            # select the green component which index is 1
-            self.used_color_component = 1
-        elif self.__class__.component_select == self.__class__.ComponentSelect.B:
-            # select the blue component which index is 2
-            self.used_color_component = 2
-        elif self.__class__.component_select == self.__class__.ComponentSelect.A:
-            # select the alpha component which index is 3
-            self.used_color_component = 3
-        elif self.__class__.component_select == self.__class__.ComponentSelect.RANDOM:
-            # select a random color component
-            self.used_color_component = random.randint(0, self.source_field.depth - 1)
-        else:
-            # component_select should be ComponentSelect.GREATEST
-            # select the greatest color component at the current automaton position
-            self.used_color_component = numpy.argmax(self.source_field[self.x, self.y])
+        # As the automaton will move the pixel (it's colour actually) we also need to keep track
+        # we need a property to store the colour information while it's moved.
+        # This property is initialized with the colour value of the pixel at its current position
+        self.colour = self.source_field[self.x, self.y]
 
-        # select how the direction of the next move of the automaton will be computed
-        if isinstance(self.__class__.direction_select, int):
-            self.__class__.direction_select %= 8
-            self.direction_function = lambda v: self.__class__.direction_select
-        elif self.__class__.direction_select == self.__class__.DirectionSelect.FOLLOW_EDGES:
-            self.direction_function = self.compute_direction
-        else:
-            # direction_select should be DirectionSelect.RANDOM_CONSTANT
-            a_random_direction = random.randint(0, 7)
-            self.direction_function = lambda v: a_random_direction
+        # We also need to know how far the pixel has been moved up to now.
+        self.distance = 0
 
-        # This value will keep track of the previous value of the used_color_component
-        self.previous_used_color_component_value = self.source_field[self.x, self.y, self.used_color_component]
-
-        # set the automaton life expectancy from the value of the used_color_component
-        self.run_before_death = int(self.source_field[self.x, self.y, self.used_color_component] * 64)
-
-        self.status = AutomatonStatus.ALIVE
-
-    def get_field_value(self, x, y):
-        """
-        If field.is_in(x, y) the method gets and returns the field value at (x, y)
-        otherwise it returns 0
-        It necessary to overload the field.get_field_value() as even if the automaton
-        is in the field, on the borders, the automaton will access adjacent points outside the field.
-        :param x: int
-        :param y: int
-        :return: a dictionary containing the field (multi-)value
-        """
-        if self.source_field.is_in((x, y)):
-            return self.source_field[x, y, self.used_color_component]
-        else:
-            return 0
-
-    @classmethod
-    def is_edge(cls, central_value, adjacent_value):
-        return central_value > adjacent_value + cls.smoothness
-
-    def compute_direction(self, central_value):
-        """
-        Follow edges by their right side (keep them on the left of the automaton displacement).
-        See also the compute_direction() method documentation in the EdgeAutomaton class definition.
-        :param central_value:
-        :return: an int in [0, 7] denoting a direction
-        """
-        start_position = random.randint(0, 7)
-        for d in range(0, 8):
-            direction = d + start_position
-            dx, dy = AutomataUtilities.get_dx_dy(direction)
-            if not self.__class__.is_edge(central_value, self.get_field_value(self.x + dx, self.y + dy)):
-                return direction
-
-        return start_position
+        # Set the automaton life expectancy from the population size and the dimensions of the field.
+        # In order to have a chance to move every pixels of the image we will choose this property of the
+        # automaton such that the number of pixels to be processed by an automaton is equal to
+        # the total number of pixels in the image divided by the number of automata.
+        # Note that, as the process is stochastic, it doesn't ensure that all pixels will be moved,
+        # it just allows it.
+        self.pixel_count_before_death = \
+            self.source_field.width * self.source_field.height // automata_population.population_size
 
     def run(self):
-        # get the field value at the current automaton position
-        used_color_component_value = self.get_field_value(self.x, self.y)
+        # Check if the automaton with its pixel/color has moved enough
+        if self.distance == self.amount:
+            # ... the pixel has been moved enough
+            # Set the color of the pixel at the current automaton position (on the result field)
+            self.result_field[self.x, self.y] = self.colour
 
-        # compute the edge size
-        # edge is the delta between used_color_component_value and its previous value
-        edge = used_color_component_value - self.previous_used_color_component_value
-        # then if edge is greater than a fixed value, it means that the automaton is on a "higher"
-        # position than the previous it occupied
-        if edge > self.__class__.roughness:
-            # update the second/dual field with a value depending on the edge size and a factor
-            # the greater the factor the more contrasted the dual image will be
-            dual_component_value = self.destination_field[self.x, self.y, self.used_color_component]
-            dual_component_value = max(dual_component_value, min(edge * self.__class__.edge_factor, 1))
-            self.destination_field[self.x, self.y, self.used_color_component] = dual_component_value
-            if dual_component_value == 1:
-                # self.status = AutomatonStatus.DEAD
-                self.status = AutomatonStatus.RESPAWN
-        else:
-            # the automaton hasn't climbed an edge, penalize it
-            self.run_before_death //= 2
+            # Decrease the number of pixels to be processed
+            self.pixel_count_before_death -= 1
+            # If the automaton has processed enough pixels, make it die.
+            if self.pixel_count_before_death == 0:
+                self.status = AutomatonStatus.DEAD
+                # And end run
+                return
 
-        # update the automaton memory
-        self.previous_used_color_component_value = used_color_component_value
+            # The automaton is still alive and it has still some pixels to process...
+            # Get the pixel color under the automaton (on the source field).
+            self.colour = self.source_field[self.x, self.y]
 
-        dx, dy = AutomataUtilities.get_dx_dy(self.direction_function(used_color_component_value))
-        self.x += dx
-        self.y += dy
+            # Reset the distance traveled
+            self.distance = 0
 
-        # decrease the automaton life expectancy
-        self.run_before_death -= 1
+        # Move the automaton on one of the adjacent position:
+        # Choose a direction randomly and update the automaton position.
+        direction = random.randint(0, 7)
+        self.x, self.y = AutomataUtilities.get_x_y(direction, self.x, self.y)
+        # The direction may make the automaton pass a border of the field. So we need to wrap the coordinates
+        # around the field (or the contrary?). i.e. If the direction makes the automaton pass the right border
+        # of the field it will be moved to the left border and vice versa (the same for the top and bottom borders).
+        self.x, self.y = AutomataUtilities.wrap_coordinates(self.x, self.y, *self.source_field.size)
 
-        # as the automaton is often trapped in a path, let it die or respawn elsewhere
-        # if it's life expectancy has exhausted or it is on a field cell value that has already reached 1
-        if self.run_before_death < 0:
-            # self.status = AutomatonStatus.DEAD
-            self.status = AutomatonStatus.RESPAWN
+        # Increase the count of the distance traveled so far
+        self.distance += 1
 
     def get_status(self):
-        if not self.source_field.is_in((self.x, self.y)):
-            self.status = AutomatonStatus.RESPAWN
-
+        # Just return a status
         return AutomatonStatus(self.status, self.x, self.y)
+
+    @classmethod
+    def describe(cls, short=True):
+        if short:
+            return f"{super().describe(short=short)}-{cls.amount}"
+        else:
+            return f"""{super().describe(short=short)}
+    amount: {cls.amount}"""
 
 
 if __name__ == "__main__":
-    from hoca.monitor.CallbackPopulation import CallbackPopulation, SaveFieldsVideoCallback, SaveFieldsImageCallback, \
-        SaveTracesImageCallback, SaveTracesVideoCallback, LogProgressCallback, Callback, Trace
+    from hoca.monitor.CallbackPopulation import CallbackPopulation, LogProgressCallback
 
     # Init the pseudo random generator to be able to replay the same population behaviour
     # This is optional
     random.seed('This is the seed')
 
-    automata_class = LiteEdgeAutomaton
+    automata_class = SpreadingAutomaton
 
     image_path = '../../images/EdwardHopper_Nighthawks_1942.jpg'
 
     # Build field
     field_dict = automata_class.build_field_dict(image_path)
-    first_field = field_dict[list(field_dict)[0]]
 
-    # Create the automata population and play it
-    # The number of run is such that an automaton will process about 52 pixels
-    automata_count = 3800
-    stop_after = 2700
-    automata_population = CallbackPopulation(field_dict, automata_count, automata_class,
-                                             generation_to_complete=stop_after,
-                                             auto_respawn=False)
+    # Create the automata population
+    automata_count = 1000
+    automata_population = CallbackPopulation(field_dict, automata_count, automata_class)
 
-    # Register the callbacks...
-    # A logging callback
+    # Register a logging callback
     automata_population.register_callback(LogProgressCallback(automata_population))
-    # A video building callback
-    # video is built from the result fields each 5 generations
-    automata_population.register_callback(
-        SaveFieldsVideoCallback(automata_population,
-                                activation_condition_function=Callback.condition_each_n_generation(5)))
-    # A callback tracing the automata trajectories
-    automata_population.register_callback(
-        SaveTracesImageCallback(automata_population,
-                                trace=Trace.TRAJECTORIES,
-                                activation_condition_function=Callback.condition_at_generation(stop_after)))
 
     # Play the population
-    automata_population.play(stop_after=stop_after)
+    automata_population.play(100000000000)
+
+    # Display the result
+    field_dict["result"].image.show()
+
+    # Save the result
+    # field_dict["result"].image.save("SpreadingAutomaton_A1000_I1931_result.jpg")

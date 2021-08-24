@@ -37,6 +37,45 @@ class AutomataUtilities:
         return cls.DIRECTION_TO_DELTA[direction]
 
     @classmethod
+    def get_x_y(cls, direction, x, y):
+        """Computes a new pair of coordinates from x, y and the direction
+
+        :param direction: an int denoting the direction of the adjacent field cell from a central position
+        :param x: an int corresponding to an abscissa in the 2D plane of a field
+        :param y: an int corresponding to an ordinate in the 2D plane of a field
+        :return: a pair (int, int) of cartesian coordinates
+        """
+        dx, dy = AutomataUtilities.get_dx_dy(direction)
+        x += dx
+        y += dy
+
+        return x, y
+
+    @classmethod
+    def wrap_coordinates(cls, x, y, width, height):
+        """Computes a new pair of coordinates from x, y while keeping these coordinates within the width, height
+        by folding the plane like a torus.
+
+        :param x: an int corresponding to an abscissa in a 2D cartesian plane
+        :param y: an int corresponding to an ordinate in a 2D cartesian plane
+        :param width: an int corresponding to the width of a finite plane
+        :param height: an int corresponding to the ordinate of a finite plane
+        :return: a pair (int, int) of cartesian coordinates
+        """
+        # Wrap the coordinates around
+        if x >= width:
+            x = x - width
+        elif x < 0:
+            x = width + x
+
+        if y >= height:
+            y = y - height
+        elif y < 0:
+            y = height + y
+
+        return x, y
+
+    @classmethod
     def get_random_tuple(cls, min_max_sequence):
         """
         A function to produce a list of random values in [min, max].

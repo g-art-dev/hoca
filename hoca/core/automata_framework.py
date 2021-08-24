@@ -123,7 +123,10 @@ class Automaton(ABC):
 
     @abstractmethod
     def get_status(self):
-        """The get_status() abstract method subclasses implementation will return the status of an automaton."""
+        """The get_status() abstract method subclasses implementation will return the status of an
+        automaton.
+        :return: AutomatonStatus
+        """
         pass
 
     @classmethod

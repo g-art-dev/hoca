@@ -176,7 +176,7 @@ class BasicPopulation(Population):
         if short:
             return f"{self.automata_class.describe(short=short)}_" \
                    f"g{self.generation}_" \
-                   f"s{self.population_size}"
+                   f"s{self.population_size}(actual {len(self.automata_population)})"
         else:
             return f"""Population: {self.__class__.__name__}
     generation: {self.generation}

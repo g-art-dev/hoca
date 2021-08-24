@@ -132,8 +132,6 @@ class LiteEdgeAutomaton(Automaton):
         # set the automaton life expectancy from the value of the used_color_component
         self.run_before_death = int(self.source_field[self.x, self.y, self.used_color_component] * 64)
 
-        self.status = AutomatonStatus.ALIVE
-
     def get_field_value(self, x, y):
         """
         If field.is_in(x, y) the method gets and returns the field value at (x, y)
@@ -228,10 +226,8 @@ if __name__ == "__main__":
 
     # Build field
     field_dict = automata_class.build_field_dict(image_path)
-    first_field = field_dict[list(field_dict)[0]]
 
-    # Create the automata population and play it
-    # The number of run is such that an automaton will process about 52 pixels
+    # Create the automata population
     automata_count = 3800
     stop_after = 2700
     automata_population = CallbackPopulation(field_dict, automata_count, automata_class,

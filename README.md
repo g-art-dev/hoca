@@ -236,7 +236,7 @@ We may add the following lines to trace the trajectories of the automata:
 ### Coding an automaton
 
 Writing the code of an automaton needs to take care of few important things. We will illustrate the whole
-process by describing the structure of an automata class and writing a toy arty automata class. 
+process by describing the important elements of an automata class and writing a toy arty automata class. 
 
 An automata class must inherit the `Automaton` abstract class and implement some mandatory methods:
 
@@ -250,10 +250,15 @@ An automata class must inherit the `Automaton` abstract class and implement some
   `BasicPopulation` or `CallbackPopulation`). It will have to:
   
   - Read the value at the current automaton position of any provided input (or input-output) field.
+    However, please note that nothing prevents the automaton to read the value at any other coordinates.
   
+  - Write the value at the current automaton position of any provided output (or input-output) field.
+    The same remark as reading the input field(s) applies the writing can occur anywhere.
+    
   - Update the state of the automaton.
   
-  - Move the automaton.
+  - Move the automaton to an adjacent field position. But as before, nothing prevents the automaton to jump
+    anywhere.
   
   These tasks may be done in any order (compatible with the purpose of the automaton). Some of them can be omitted
   if they aren't necessary. 
@@ -266,10 +271,144 @@ An automata class must inherit the `Automaton` abstract class and implement some
 We also have to implement the `__init__()` method without omitting to call `super().__init__()` to invoke
 the corresponding function of the parent class. As we are interested in higher-order automata,
 the `__init__()` method has the responsibility to initialize the state or "memory" of the automaton for
-later use. 
+later use.
+
+Let say we want to write an automata class that shuffles the content of a field containing an image, moving
+the pixels along a specified distance and in a random direction. That may look similar to the [_Spread_ filter
+in Gimp](https://docs.gimp.org/2.10/en/gimp-filter-noise-spread.html).
+
+The code below is an implementation of such an antomaton. It is commented to explain how it works but you'll
+find more explanations below it.
 
 ```python
+# Let's import the modules we need.
+import random
+
+from hoca.core.automata_framework import Automaton, AutomatonStatus
+from hoca.core.ImageField import ImageField
+from hoca.core.utilities import AutomataUtilities
+
+
+class SpreadingAutomaton(Automaton):
+    # The amount class variable determines how far a pixel will be moved.
+    amount = 5
+
+    @classmethod
+    def build_field_dict(cls, image_path):
+        # Build a field dictionary:
+        # - The source field is a read-only field built from the provided image.
+        # - The result field is a blank write-only field the same size of the source field.
+        source_field = ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB")
+        return {'source': source_field,
+                'result': ImageField.blank(source_field.size, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
+
+    def __init__(self, automata_population):
+        super().__init__()
+
+        # Keep a shortcut to the fields, it improves readability
+        # and may be efficient as it is accessed quite often.
+        # Set a shortcut to the fields from the fields dictionary
+        self.source_field = automata_population.field_dict['source']
+        self.result_field = automata_population.field_dict['result']
+
+        # Set an initial random position for the automaton
+        self.x = random.randint(0, self.source_field.width - 1)
+        self.y = random.randint(0, self.source_field.height - 1)
+
+        # As the automaton will move the pixel (it's colour actually) we also need to keep track
+        # we need a property to store the colour information while it's moved.
+        # This property is initialized with the colour value of the pixel at its current position
+        self.colour = self.source_field[self.x, self.y]
+
+        # We also need to know how far the pixel has been moved up to now.
+        self.distance = 0
+
+        # Set the automaton life expectancy from the population size and the dimensions of the field.
+        # In order to have a chance to move every pixels of the image we will choose this property of the
+        # automaton such that the number of pixels to be processed by an automaton is equal to
+        # the total number of pixels in the image divided by the number of automata.
+        # Note that, as the process is stochastic, it doesn't ensure that all pixels will be moved,
+        # it just allows it.
+        self.pixel_count_before_death = \
+            self.source_field.width * self.source_field.height // automata_population.population_size
+
+        # Finally, set it alive.
+        self.status = AutomatonStatus.ALIVE
+
+    def run(self):
+        # Check if the automaton with its pixel/color has moved enough
+        if self.distance == self.amount:
+            # ... the pixel has been moved enough
+            # Set the color of the pixel at the current automaton position (on the result field)
+            self.result_field[self.x, self.y] = self.colour
+
+            # Decrease the number of pixels to be processed
+            self.pixel_count_before_death -= 1
+            # If the automaton has processed enough pixels, make it die.
+            if self.pixel_count_before_death == 0:
+                self.status = AutomatonStatus.DEAD
+                # And end run
+                return
+
+            # The automaton is still alive and it has still some pixels to process...
+            # Get the pixel color under the automaton (on the source field).
+            self.colour = self.source_field[self.x, self.y]
+
+            # Reset the distance traveled
+            self.distance = 0
+
+        # Move the automaton on one of the adjacent position:
+        # Choose a direction randomly and update the automaton position.
+        direction = random.randint(0, 7)
+        self.x, self.y = AutomataUtilities.get_x_y(direction, self.x, self.y)
+        # The direction may make the automaton pass a border of the field. So we need to wrap the coordinates
+        # around the field (or the contrary?). i.e. If the direction makes the automaton pass the right border
+        # of the field it will be moved to the left border and vice versa (the same for the top and bottom borders).
+        self.x, self.y = AutomataUtilities.wrap_coordinates(self.x, self.y, *self.source_field.size)
+
+        # Increase the count of the distance traveled so far
+        self.distance += 1
+
+    def get_status(self):
+        # Just return a status
+        return AutomatonStatus(self.status, self.x, self.y)
+
+    @classmethod
+    def describe(cls, short=True):
+        if short:
+            return f"{super().describe(short=short)}-{cls.amount}"
+        else:
+            return f"""{super().describe(short=short)}
+    amount: {cls.amount}"""
 ```
+
+The `build_field_dict()` method will prepare the field dictionary for the automata population. There are (as usual)
+many ways to look at that. One of them is to have a dictionary with two fields: one field filled with the source image
+and one initially empty field to be filled by the automata.
+
+The `__init()__` method initializes the state of the automaton. This state must contain the necessary properties
+the automaton must "know" from one generation to the next. These are, for example, the position (x, y) of the
+automaton on the fields or its status (is it living or dead?). In the automata class we are coding, we also need
+to retain the colour of the pixel the automata is moving and the distance it has traveled.
+Except if you always know in advance the number of generation the whole population of automata has to be be run,
+it is also useful to have some sort of counter to control the life expectancy of each automaton.
+In our case, the `pixel_count_before_death` instance variable will be decreased each time the automaton has
+completed a pixel move and the initial value of the variable will depend on the image size and the number of
+automata in the population.
+
+It is very important to call the `__init()__` method of the parent class (however, the location of the call
+isn't necessarily at the beginning of the method). In the case of our `SpreadingAutomaton` class the parent class
+is the abstract `Automaton` which `__init()__` method sets the status property of the automaton to
+`AutomatonStatus.ALIVE` in order to let it run on the next population run.
+
+The `run()` method will do the work of the automaton for one generation. It's obviously the most interesting
+part of the automaton to write.
+
+...
+
+![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result.jpg)
+> Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata.  
+> (_result field_)
 
 
 
@@ -289,9 +428,13 @@ were accompanied by a citation naming it; something like:
 
 You might also send us a little mail about what you're doing with `hoca`.
 
-## Contribute !
-`hoca` is an open-source library written at [Villa Arson](https://www.villa-arson.fr/) and
+## Licencing & contribution
+
+`hoca` is a free software library written at [Villa Arson](https://www.villa-arson.fr/) and
 [I3S](https://www.i3s.unice.fr/) and released on GitHub under the LGPLv3 license.
+You should have received a copy of the GNU Lesser General Public License
+along with `hoca`. If not, see http://www.gnu.org/licenses/.
+
 The library is copyrighted by its contributors (see source file headers).
 
 There is a lot of room for improvements, everyone is welcome to contribute if you find any bug or have ideas
