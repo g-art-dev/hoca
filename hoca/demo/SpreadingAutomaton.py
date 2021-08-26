@@ -145,6 +145,9 @@ if __name__ == "__main__":
 
     automata_class = SpreadingAutomaton
 
+    # We can change the amount class property to spread the pixels farther.
+    # SpreadingAutomaton.amount = 10
+
     image_path = '../../images/EdwardHopper_Nighthawks_1942.jpg'
 
     # Build field
@@ -158,7 +161,7 @@ if __name__ == "__main__":
     automata_population.register_callback(LogProgressCallback(automata_population))
 
     # Play the population
-    automata_population.play(100000000000)
+    automata_population.play(1000000)
 
     # Display the result
     field_dict["result"].image.show()

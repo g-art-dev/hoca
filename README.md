@@ -2,6 +2,19 @@
 
 ## Overview
 
+In the 80's many computer science magazines featured articles on Conway's game of life and Wolfram's elementary 
+cellular automata. Many of these articles told us that cellular automata would revolutionize the arts and sciences.
+There have indeed been some interesting scientific developments, but we cannot say that this announcement turned out
+to be premonitory, at least for the arts.
+
+`hoca` is a work in progress which aims to provide a framework to test ideas around the use of higher-order
+cellular automata to manipulate or create images. It is born while having some artistic goal in mind, but the
+approach quickly led to compare it with some traditional algorithms of the image processing toolkit.
+So this work is double bound to visual arts and computer science.
+
+`Hoca` is a Python library, and its code was primarily written with readability before speed in mind. So relax
+and enjoy the scenery.
+
 ## Installation
 The latest version of `hoca` is installed via a standard pip command:
 
@@ -415,16 +428,62 @@ part of the automaton to write. In the case of the `SpreadingAutomaton` there ar
 
 - The movement of the automaton. It has to travel a number of pixels equal to the value of the `amount` class variable.
 
-...TODO: write about describe(), get_status() and the main program...
+The writing of the `get_status()` method is straightforward, it just had to return the `status` variable (along with
+the coordinates). But in some cases, the `run()` method don't or cannot compute the status, or it depends on an event
+external to the automaton instance or not occurring while the `run()` method is executed. Then, the automaton status
+should be computed in the `get_status()` method.
 
-![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-withstains.jpg)
+There is not much to say about the `describe()` method except it's a class method and it can't report about
+the automaton instance. Note this may change in the future.
+
+So we wrote the class, now we need to run it. We'll follow the same path as in the previous section using the
+`CallbackPopulation` class to run a population of automata while having some report about what's going on.
+
+```python
+if __name__ == "__main__":
+    from hoca.monitor.CallbackPopulation import CallbackPopulation, LogProgressCallback
+
+    # Init the pseudo random generator to be able to replay the same population behaviour
+    # This is optional
+    random.seed('This is the seed')
+
+    automata_class = SpreadingAutomaton
+
+    # We can change the amount class property to spread the pixels farther.
+    # SpreadingAutomaton.amount = 10
+
+    image_path = '../../images/EdwardHopper_Nighthawks_1942.jpg'
+
+    # Build field
+    field_dict = automata_class.build_field_dict(image_path)
+
+    # Create the automata population
+    automata_count = 1000
+    automata_population = CallbackPopulation(field_dict, automata_count, automata_class)
+
+    # Register a logging callback
+    automata_population.register_callback(LogProgressCallback(automata_population))
+
+    # Play the population
+    automata_population.play(1000000)
+
+    # Display the result
+    field_dict["result"].image.show()
+```
+
+Note that the `play()` method of the population is called with an arbitrary large number because the automata determine
+by themselves (with the `pixel_count_before_death` variable) the number of generations needed to achieve their job.
+So the `play()` method will return when all the automata have died even if it's before having reached the millionth
+generation.
+
+![Spread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-withstains.jpg)
 > Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata (with stains).  
 > (_result field_)
 
 You can see in the result of the execution of the automata code above. There are black stains on the spread
 image. This is not necessarily desirable, and it comes from the randomness of the coverage of the fields by the
 automata.
-In order to avoid this phenomenon or at least hide it, we can pre-fill the result field with the original image.
+In order to avoid this phenomenon (or at least hide it), we can pre-fill the result field with the original image.
 This is done with a rewritten `build_field_dict()` method.
 
 ```python
@@ -440,13 +499,31 @@ This is done with a rewritten `build_field_dict()` method.
                 'result': ImageField.from_image(image_path, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
 ```
 
-![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-nostain.jpg)
+![Spread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-nostain.jpg)
 > Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata (without stain).  
 > (_result field_)
 
 A similar result could have been achieved by using a single input-output field. The automata would have read and
 write the colours on the same field, swapping the pixels at the beginning and the end of the move, or taking the colour
 found at the end of the move for the next move.
+
+The code of the `run()` method is quite demonstrative and may be easily enhanced if the user is in need of performance.
+At the moment, it takes a number of generations equal to the `amount` class variable for an automaton to move the colour.
+But this could be done in a single generation:
+
+```python
+    # Compute the relative destination position.
+    dx = random.randint(-self.amount, self.amount)
+    dy = random.randint(-self.amount, self.amount)
+    # As |dx| may be greater than 1 (the same for |dy|), the automaton will "jump" from
+    # its current position to the next.
+
+    # Compute the destination coordinates wrapping them if they're out of the field.
+    self.x, self.y = AutomataUtilities.wrap_coordinates(self.x + dx, self.y + dy, *self.source_field.size)
+
+    # Finally, update the distance travelled.
+    self.distance = self.amount
+```
 
 As a final thought about this automata class, using a cellular automaton to do this kind of operation on an image isn't 
 probably the most efficient way to get a result. However, this approach allows thinking locally (at the pixel level)
