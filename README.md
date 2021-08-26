@@ -241,19 +241,19 @@ process by describing the important elements of an automata class and writing a 
 An automata class must inherit the `Automaton` abstract class and implement some mandatory methods:
 
 - `build_field_dict()` class method. This method will be used to build a proper field dictionary for the
-  automaton we are writing. The field dictionary may contain one or more fields. The number of fields depends
+  automaton we are writing. The field dictionary will contain one or more fields. The number of fields depends
   on what the automata are processing. The name (or keys as they're stored in a Python dictionary) can be
   chosen freely.
   
 - `run()` instance method. This method will contain the code controlling the behaviour of the automaton.
-  It will be called on each generation by the class that handles the automata population (probably 
+  It will be called on each generation by the class that handles the automata population (presumably 
   `BasicPopulation` or `CallbackPopulation`). It will have to:
   
   - Read the value at the current automaton position of any provided input (or input-output) field.
     However, please note that nothing prevents the automaton to read the value at any other coordinates.
   
   - Write the value at the current automaton position of any provided output (or input-output) field.
-    The same remark as reading the input field(s) applies the writing can occur anywhere.
+    The same remark as reading the input field(s) applies, the writing can occur anywhere.
     
   - Update the state of the automaton.
   
@@ -275,13 +275,13 @@ later use.
 
 Let say we want to write an automata class that shuffles the content of a field containing an image, moving
 the pixels along a specified distance and in a random direction. That may look similar to the [_Spread_ filter
-in Gimp](https://docs.gimp.org/2.10/en/gimp-filter-noise-spread.html).
+of the GNU Image Manipulation Program](https://docs.gimp.org/2.10/en/gimp-filter-noise-spread.html).
 
-The code below is an implementation of such an antomaton. It is commented to explain how it works but you'll
+The code below is an implementation of such an antomaton. It is commented to explain how it works, but you'll
 find more explanations below it.
 
 ```python
-# Let's import the modules we need.
+# Import the needed modules.
 import random
 
 from hoca.core.automata_framework import Automaton, AutomatonStatus
@@ -383,34 +383,74 @@ class SpreadingAutomaton(Automaton):
 ```
 
 The `build_field_dict()` method will prepare the field dictionary for the automata population. There are (as usual)
-many ways to look at that. One of them is to have a dictionary with two fields: one field filled with the source image
-and one initially empty field to be filled by the automata.
+many ways to look at that. The most obvious is to have a dictionary with two fields: one field filled with the source image
+and one initially empty field to be filled by the automata process.
 
-The `__init()__` method initializes the state of the automaton. This state must contain the necessary properties
+The `__init()__` method initializes the state of the automaton. This state will contain the necessary properties
 the automaton must "know" from one generation to the next. These are, for example, the position (x, y) of the
-automaton on the fields or its status (is it living or dead?). In the automata class we are coding, we also need
-to retain the colour of the pixel the automata is moving and the distance it has traveled.
-Except if you always know in advance the number of generation the whole population of automata has to be be run,
+automaton on the fields or its status (is it living or dead?).  
+In the automata class we are coding, we also need  to retain the colour of the pixel the automata is moving, 
+and the distance it has traveled. Hence, the `colour` instance variable is initialized with the colour found
+at the automaton initial position and the `distance` is initialized to 0 (has the automaton has not moved yet).  
+Except if you always know in advance the number of generation the whole population of automata has to be run,
 it is also useful to have some sort of counter to control the life expectancy of each automaton.
 In our case, the `pixel_count_before_death` instance variable will be decreased each time the automaton has
-completed a pixel move and the initial value of the variable will depend on the image size and the number of
-automata in the population.
+completed a pixel move. The initial value of this variable will depend on the image size and the number of
+automata in the population. Then, when the variable goes to zero, the automaton will die.
 
 It is very important to call the `__init()__` method of the parent class (however, the location of the call
-isn't necessarily at the beginning of the method). In the case of our `SpreadingAutomaton` class the parent class
+isn't necessarily at the beginning of the method). In the case of our `SpreadingAutomaton` class, the parent class
 is the abstract `Automaton` which `__init()__` method sets the status property of the automaton to
-`AutomatonStatus.ALIVE` in order to let it run on the next population run.
+`AutomatonStatus.ALIVE` in order to let it run on the first population generation.
 
 The `run()` method will do the work of the automaton for one generation. It's obviously the most interesting
-part of the automaton to write.
+part of the automaton to write. In the case of the `SpreadingAutomaton` there are four things we need to handle:
 
-...
+- The writing of the pixel colour currently stored in the `colour` variable when the automaton has moved enough.
 
-![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result.jpg)
-> Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata.  
+- The death of the automaton. It has to move a number of pixel colours equal to the value of `pixel_count_before_death`
+  variable. After that, the automaton should die.
+  
+- The reading of a new pixel colour when the automaton has completed the handling the previous pixel colour.
+
+- The movement of the automaton. It has to travel a number of pixels equal to the value of the `amount` class variable.
+
+...TODO: write about describe(), get_status() and the main program...
+
+![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-withstains.jpg)
+> Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata (with stains).  
 > (_result field_)
 
+You can see in the result of the execution of the automata code above. There are black stains on the spread
+image. This is not necessarily desirable, and it comes from the randomness of the coverage of the fields by the
+automata.
+In order to avoid this phenomenon or at least hide it, we can pre-fill the result field with the original image.
+This is done with a rewritten `build_field_dict()` method.
 
+```python
+    @classmethod
+    def build_field_dict(cls, image_path):
+        # As the course of the automata is random (see the run() method), the source and/or result fields
+        # will probably not be covered entirely and the result field will contain black/blank pixels. In order to
+        # have a (more interesting?) result without those blank spots, one can pre-fill the result field with the
+        # source image:
+        # - The source field is a read-only field built from the provided image.
+        # - The result field is a write-only field built from the provided image.
+        return {'source': ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB"),
+                'result': ImageField.from_image(image_path, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
+```
+
+![Sread Nighthawks](https://github.com/g-art-dev/hoca/raw/main/images/SpreadingAutomaton_A1000_I1931_result-nostain.jpg)
+> Hopper's Nighthawks after 1931 generations with 1000 SpreadAutomaton automata (without stain).  
+> (_result field_)
+
+A similar result could have been achieved by using a single input-output field. The automata would have read and
+write the colours on the same field, swapping the pixels at the beginning and the end of the move, or taking the colour
+found at the end of the move for the next move.
+
+As a final thought about this automata class, using a cellular automaton to do this kind of operation on an image isn't 
+probably the most efficient way to get a result. However, this approach allows thinking locally (at the pixel level)
+instead of globally (at the image level) and may lead to simpler investigation of an idea.
 
 ## Limitations
 

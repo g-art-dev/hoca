@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with hoca.  If not, see <http://www.gnu.org/licenses/>.
 
+# Import the needed modules.
 import random
 
 from hoca.core.automata_framework import Automaton, AutomatonStatus
@@ -45,13 +46,13 @@ class SpreadingAutomaton(Automaton):
         # Build a field dictionary:
         # - The source field is a read-only field built from the provided image.
         # - The result field is a blank write-only field the same size of the source field.
-        source_field = ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB")
-        return {'source': source_field,
-                'result': ImageField.blank(source_field.size, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
+        # source_field = ImageField.from_image(image_path, io_mode=ImageField.IOMode.IN, image_mode="RGB")
+        # return {'source': source_field,
+        #         'result': ImageField.blank(source_field.size, io_mode=ImageField.IOMode.OUT, image_mode="RGB")}
 
         # As the course of the automata is random (see the run() method below), the source and/or result fields
         # will probably not be covered entirely and the result field will contain black/blank pixels. In order to
-        # have a more interesting result without those blank spots, one can pre-fill the result field with the
+        # have a (more interesting?) result without those blank spots, one can pre-fill the result field with the
         # source image:
         # - The source field is a read-only field built from the provided image.
         # - The result field is a write-only field built from the provided image.
@@ -163,4 +164,4 @@ if __name__ == "__main__":
     field_dict["result"].image.show()
 
     # Save the result
-    # field_dict["result"].image.save("SpreadingAutomaton_A1000_I1931_result.jpg")
+    # field_dict["result"].image.save("SpreadingAutomaton_A1000_I1931_result-nostain.jpg")
