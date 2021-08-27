@@ -161,7 +161,7 @@ if __name__ == "__main__":
     automata_population.register_callback(LogProgressCallback(automata_population))
 
     # Play the population
-    automata_population.play(1000000)
+    automata_population.play(stop_after=1000000)
 
     # Display the result
     field_dict["result"].image.show()

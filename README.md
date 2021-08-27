@@ -118,9 +118,16 @@ in the first.
 > [https://www.artic.edu/artworks/111628/nighthawks](https://www.artic.edu/artworks/111628/nighthawks)  
 > (_source field_)
 
-We will now see how to write some code use this class: We have to build a field dictionary
-to provide the source image and receive the contours drawn, constitute a population of `LiteEdgeAutomaton`,
-and then _play_ the population. Here is the code:
+We will now see how to write some code to use this class: We have to build a field dictionary
+to:
+
+1. provide the source image and receive the contours drawn,
+   
+2. constitute a population of `LiteEdgeAutomaton`,
+
+3. and then _play_ the population.
+   
+Here is the code:
 
 ```python
 import random
@@ -146,17 +153,16 @@ automata_population.play(stop_after=2700)
 field_dict["result"].image.show()
 ```
 
-Obviously, the code starts with the importation of the stuff it will need. It then initializes the field
-dictionary. In order to do that, it calls the `build_field_dict()` convenience class method of the automata
-class, passing the image to process to it. In this case, the dictionary returned contains two items the
+Obviously, the code starts with the importation of the stuff it will need, it then initializes the field
+dictionary. In order to do that, the code calls the `build_field_dict()` convenience class method of the automata
+class, passing the image to process to it. In this case, the returned dictionary contains two items the
 `"source"` field and the `"result"` field.  
 Note the parameters of `build_field_dict()` may change from class to class as the data to be processed may
 differ.
 
 The automata population is created by instantiating the `BasicPopulation` class. The program passes the field
-dictionary, the number of automata to instantiate and the class of the automata to it. The automata
-The population is
-then played for 2700 generations by calling the `play()` method. 
+dictionary, the number of automata to instantiate and the class of the automata to it.
+The population is then played for 2700 generations by calling the `play()` method. 
 
 The program ends displaying the result field as an image. The field dictionary may also be accessed through the
 corresponding property of the population instance (here `automata_population.field_dict`).
@@ -452,10 +458,8 @@ if __name__ == "__main__":
     # We can change the amount class property to spread the pixels farther.
     # SpreadingAutomaton.amount = 10
 
-    image_path = '../../images/EdwardHopper_Nighthawks_1942.jpg'
-
     # Build field
-    field_dict = automata_class.build_field_dict(image_path)
+    field_dict = automata_class.build_field_dict("images/EdwardHopper_Nighthawks_1942.jpg")
 
     # Create the automata population
     automata_count = 1000
@@ -465,7 +469,7 @@ if __name__ == "__main__":
     automata_population.register_callback(LogProgressCallback(automata_population))
 
     # Play the population
-    automata_population.play(1000000)
+    automata_population.play(stop_after=1000000)
 
     # Display the result
     field_dict["result"].image.show()

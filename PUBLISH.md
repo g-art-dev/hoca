@@ -1,8 +1,8 @@
 # These are the required steps in order to publish the `hoca` package.
 
-1. Update the version number in `hoca/__init__.py` and `hoca/setup.py`, they must be the same.
+1. Update the version numbers in `hoca/__init__.py` and `hoca/setup.py`, they must be the same.
 
-2. Change directory to the `hoca` project root (not the hoca package root).
+2. If necessary, change directory to the `hoca` project root (not the hoca package root).
 
 3. Build the source and binary archives:
    ```shell
