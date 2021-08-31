@@ -18,6 +18,8 @@
 import pathlib
 from setuptools import setup
 
+from hoca.__init__ import __version__ as hoca_version
+
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
 
@@ -27,7 +29,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="hoca",
-    version="2021.8.1",
+    version=hoca_version,
     description="Provides a set of tools to implement Higher-Order Cellular Automata populations",
     long_description=README,
     long_description_content_type="text/markdown",

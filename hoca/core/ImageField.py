@@ -107,12 +107,15 @@ class ImageField(Field):
         # Convert the image data as a numpy array
         self._data = numpy.asarray(image)
 
-        # It can be a 2D array when the image as only one band (it's a grayscale or a b&w image)
+        # It can be a 2D array when the image as only one band (as in a grayscale image)
         # add a 3rd dimension to have an homogenous 3D representation
         if len(self._data.shape) == 2:
             self._data = self._data[..., numpy.newaxis]
+            self._data_2d = True
+        else:
+            self._data_2d = False
 
-        # The PIL Image and the numpy array have their coordinates swapped.
+            # The PIL Image and the numpy array have their coordinates swapped.
         # The reason is PIL.Image.size: (width, height) while numpy.ndarray.shape is (rows, columns).
         # So we need to transpose() transpose the array.
         self._data = self._data.transpose(1, 0, 2)
@@ -140,7 +143,13 @@ class ImageField(Field):
         if self._data_written:
             # convert data back to the image
             # rebuild the image from the numpy data
-            self._image = Image.fromarray((self._data.transpose(1, 0, 2) * 255).astype(numpy.uint8))
+            image_data = (self._data.transpose(1, 0, 2) * 255).astype(numpy.uint8)
+
+            if self._data_2d:
+                # Remove the 3rd dimension
+                image_data = image_data[:, :, 0]
+
+            self._image = Image.fromarray(image_data)
 
         return self._image
 
@@ -257,6 +266,26 @@ if __name__ == "__main__":
     # It will make solid (instead of transparent) the corresponding point in the image
     # (this will be a black dot as the image background is black)
     image_field[image_field.width // 4, image_field.height // 2, 3] = 1
+
+    # Get the field back as an image and display it
+    image_field.image.show()
+
+    # Create a blank ImageField of 10 by 10 cells
+    # image_mode="L" makes it correspond to an all black image of 10x10 pixels.
+    # And make the field readable and writable.
+    image_field = ImageField.blank((10, 10), image_mode="L", io_mode=ImageField.IOMode.INOUT)
+
+    # Put a value of 1s in the middle of the field
+    # It will correspond to a white pixel in the image
+    image_field[image_field.width // 2, image_field.height // 2] = 1
+
+    # Put another value at a cell in the field
+    # It will correspond to a dark grey pixel in the image
+    image_field[image_field.width // 2, image_field.height // 4] = 0.33
+
+    # Draw a light grey pixel
+    # One can specify the 3rd dimension index even if it's always 0 on a grayscale ImageField
+    image_field[image_field.width // 4, image_field.height // 2, 0] = 0.66
 
     # Get the field back as an image and display it
     image_field.image.show()
