@@ -78,18 +78,49 @@ class ImageField(Field):
         """The initializer method fills the field instance with the pixel data of the PIL
         Image passed in the image parameter.
 
+        Important notice:
+        PIL images have a mode (see: https://pillow.readthedocs.io/en/stable/handbook/concepts.html)
+        which specifies the size of the data hold on each pixel. This class doesn't handle all the PIL
+        modes. Supported modes are:
+
+        - L (8-bit pixels, black and white)
+
+        - RGB (3x8-bit pixels, true color)
+
+        - RGBA (4x8-bit pixels, true color with transparency mask)
+
+        - CMYK (4x8-bit pixels, color separation)
+
+        - YCbCr (3x8-bit pixels, color video format)
+
+        - HSV (3x8-bit pixels, Hue, Saturation, Value color space)
+
         :param image: PIL.Image
         """
+        assert image.mode in ("L", "RGB", "RGBA", "CMYK", "YCbCr", "HSV"), "Unsupported PIL image mode"
+
         super().__init__(**kwargs)
 
         # Keep track of the data in its source format
         self._image = image
 
-        # convert image as a numpy array of [0, 1] values
-        self._data = numpy.asarray(image).transpose(1, 0, 2) / 255
-        # Note: the PIL Image and the numpy array have their coordinates swapped.
+        # Convert the image data as a numpy array
+        self._data = numpy.asarray(image)
+
+        # It can be a 2D array when the image as only one band (it's a grayscale or a b&w image)
+        # add a 3rd dimension to have an homogenous 3D representation
+        if len(self._data.shape) == 2:
+            self._data = self._data[..., numpy.newaxis]
+
+        # The PIL Image and the numpy array have their coordinates swapped.
         # The reason is PIL.Image.size: (width, height) while numpy.ndarray.shape is (rows, columns).
-        # Hence the transpose() call.
+        # So we need to transpose() transpose the array.
+        self._data = self._data.transpose(1, 0, 2)
+
+        # Add finally, convert the image data as values in [0, 1]
+        # We can divide the numpy array by 255 because all the (supported) PIL images modes are
+        # byte wise.
+        self._data = self._data / 255
 
         # The _data_written private property tells if the current content of _image
         # ISN'T the same as the _data property that contains the numpy representation.
@@ -107,7 +138,7 @@ class ImageField(Field):
         :return: PIL.Image
         """
         if self._data_written:
-            # convert data back to an image
+            # convert data back to the image
             # rebuild the image from the numpy data
             self._image = Image.fromarray((self._data.transpose(1, 0, 2) * 255).astype(numpy.uint8))
 

@@ -130,3 +130,7 @@ dmypy.json
 
 # PyCharm stuff
 .idea/
+
+# Project specific
+/hoca/demo/LiteEdgeAutomaton_*/
+/hoca/demo/SpreadingAutomaton_*/
