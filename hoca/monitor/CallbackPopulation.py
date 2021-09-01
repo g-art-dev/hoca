@@ -300,7 +300,7 @@ class SaveFieldsImageCallback(ImageCallback):
 
         # For each subfield in the field
         for subfield_name, subfield in self.population.field_dict.items():
-            # Save the input subfields content (they won't be save later)
+            # Save the input subfields content (they won't be saved later)
             if subfield.io_mode == Field.IOMode.IN:
                 image_path = os.path.join(self.base_directory, f"{subfield_name}_field.png")
                 subfield.image.save(image_path)
