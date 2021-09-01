@@ -16,5 +16,5 @@
 # along with hoca.  If not, see <http://www.gnu.org/licenses/>.
 
 # The version number is YYYY.M.n
-__version__ = "2021.8.2"
+__version__ = "2021.9.0"
 __all__ = ["core", "monitor", "demo"]
