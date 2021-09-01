@@ -195,6 +195,12 @@ class ImageCallback(Callback):
     def __init__(self, *args, **kwargs):
         super(ImageCallback, self).__init__(*args, **kwargs)
 
+        # If necessary create the base_directory (computed in the parent __init__()).
+        # The images saved by the subclasses of ImageCallback will be stored either in this directory or
+        # in a subdirectory of it.
+        if not os.path.exists(self.base_directory):
+            os.makedirs(self.base_directory)
+
     @abstractmethod
     def callback(self, elapsed_time):
         """The callback() method is supposed to be called by the play() method of a CallbackPopulation
