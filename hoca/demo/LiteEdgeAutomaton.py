@@ -48,6 +48,8 @@ class LiteEdgeAutomaton(Automaton):
 
     component_select = ComponentSelect.GREATEST
     direction_select = DirectionSelect.RANDOM_CONSTANT
+    # TODO: roughness should be renamed as threshold
+    # TODO: smoothness should be renamed as tolerance
     roughness = 0.05  # about 12 / 255
     edge_factor = 2
     smoothness = 0.05
